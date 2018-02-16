@@ -1,0 +1,164 @@
+<?php
+
+
+
+
+
+
+/**
+ * @file
+ * Automatically adds morphological box exposed filters to map views.
+ */
+function map_filters_views_pre_view(&$view, &$display_id, &$args) {
+
+  // The search results map settings of the maps view
+  if ($view->name === 'research' && $display_id === 'map_research') {
+
+    // Get morphological box taxonomy vocabularies
+    $query = "SELECT taxonomy_vocabulary.name AS vocabulary_name, taxonomy_vocabulary.machine_name AS vocabulary_machinename,
+              taxonomy_vocabulary.vid AS vocabulary_vid, taxonomy_vocabulary.weight AS vocabulary_weight
+            FROM {taxonomy_vocabulary} taxonomy_vocabulary
+            WHERE taxonomy_vocabulary.machine_name LIKE 'tax_morph_%'
+            ORDER BY vocabulary_weight ASC, vocabulary_name ASC;";
+    $result = db_query($query);
+
+    // Get existing view filters
+    $filters = $view->display_handler->get_option('filters');
+
+    // Add all morphological box vocabularies as exposed filters
+    foreach ($result as $vocabulary) {
+
+      $vocMachineName = $vocabulary->vocabulary_machinename;
+      $vocLabel = $vocabulary->vocabulary_name;
+
+      if (empty($filters[$vocMachineName])) {
+        // There is no vid filter so we have to add it
+        $view->add_item(
+          $view->current_display,
+          'filter',
+          'taxonomy_index',
+          'tid',
+          array(
+            'relationship' => 'none',
+            'group_type' => 'group',
+            'ui_name' => '',
+            'operator' => 'or',
+            'value' => '',
+            'group' => '1',
+            'exposed' => true,
+            'expose' =>
+              array (
+                'label' => $vocLabel,
+                'description' => '',
+                'use_operator' => 0,
+                'operator_label' => '',
+                'identifier' => $vocMachineName,
+                'required' => 0,
+                'remember' => 0,
+                'multiple' => 0,
+                'reduce' => false,
+              ),
+            'is_grouped' => false,
+            'group_info' =>
+              array (
+                'label' => '',
+                'description' => '',
+                'identifier' => '',
+                'optional' => true,
+                'widget' => 'select',
+                'multiple' => false,
+                'remember' => 0,
+                'default_group' => 'All',
+                'default_group_multiple' =>
+                  array (
+                  ),
+                'group_items' =>
+                  array (
+                  ),
+              ),
+            'reduce_duplicates' => 0,
+            'type' => 'select',
+            'limit' => true,
+            'vocabulary' => $vocMachineName,
+            'hierarchy' => 0,
+            'error_message' => 1,
+          )
+        );
+      }
+    }
+  }
+}
+
+
+/**
+ * Implements hook_leaflet_map_prebuild_alter().
+ * Adds a heatmap overlay layer to leaflet maps.
+ */
+function map_filters_leaflet_map_prebuild_alter(&$settings) {
+  // TODO register as a proper library and check for existence hook_libraries_info()
+  drupal_add_js('sites/all/libraries/leaflet-heat/leaflet-heat.js', 'file');
+
+  // Convert coordinates of all leaflet markers to leaflet-heat compatible format.
+  $heatData = array();
+  foreach ($settings['features'] as $location) {
+    $coordinates = array($location['lat'], $location['lon']);
+    array_push($heatData, $coordinates);
+  }
+
+  // Add leaflet-heat compatible coordinates to Drupal environment (Drupal.settings.map_filters.heatData)
+  drupal_add_js(array('map_filters' => array('heatData' => null)), 'setting');
+  drupal_add_js(array('map_filters' => array('heatData' => $heatData)), 'setting');
+
+
+  // Add JS to add heatmap layer to the current leaflet map
+  drupal_add_js(drupal_get_path('module', 'map_filters') .'/js/map_control.js', array('scope' => 'footer', 'weight' => 100, 'cache' => FALSE));
+
+}
+
+
+/**
+ * Implements hook_views_post_execute().
+ * Compute coordinates of projects and their associated partners to connect them by lines on leaflet maps.
+ */
+function map_filters_views_post_execute(&$view) {
+  if ($view->name === 'research' && $view->current_display === 'researchsite') {
+
+    $projects = array();
+    $projectPartners = array();
+    $polyLines = array();
+
+    // Extract project and partner coordinates
+    foreach ($view->result as $r) {
+      if ($r->node_type === 'projekt') {
+        $geoData = $r->field_field_location[0]['raw'];
+        $projects[$r->nid] = array('lat' => $geoData['lat'], 'lng' => $geoData['lon']);
+      } else if ($r->node_type === 'umsetzungspartner' || $r->node_type === 'projektpartner') {
+        $geoData = $r->field_field_location[0]['raw'];
+        $projectPartners[$r->nid] = array('lat' => $geoData['lat'], 'lng' => $geoData['lon']);
+      }
+    }
+
+    // Check the partners for each project of the map view and store their coordinates.
+    foreach ($projects as $nid => $coords) {
+      // TODO duplicate code, extract separate function
+      $nodeProject = node_load($nid);
+      $partnerIds = field_get_items('node', $nodeProject, 'field_projektpartner');
+
+      if (is_array($partnerIds)) {
+        foreach ($partnerIds as $p) {
+          $polyLines[] = array($projects[$nid], $projectPartners[$p['target_id']]);
+        }
+      }
+
+      $partnerIds = field_get_items('node', $nodeProject, 'field_umpartner');
+      if (is_array($partnerIds)) {
+        foreach ($partnerIds as $p) {
+          $polyLines[] = array($projects[$nid], $projectPartners[$p['target_id']]);
+        }
+      }
+    }
+
+    drupal_add_js(array('map_filters' => array('polylinesData' => $polyLines)), 'setting');
+  }
+}
+

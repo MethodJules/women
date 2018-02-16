@@ -1,0 +1,56 @@
+<?php
+
+/**
+ * Implement hook_schema()
+ */
+
+function indekonews_conversion_schema() {
+    $schema = array();
+
+    $schema['newsletter_order'] = array(
+        'description' => 'The table for the newsletter orders from the users',
+        'fields' => array(
+            'newsletter_order_id' => array(
+                'description' => 'The primary identifier for newsletter_orders.',
+                'type' => 'int',
+                'unsigned' => TRUE,
+                'not null' => TRUE,
+            ),
+            'uid' => array(
+                'description' => 'The user id',
+                'type' => 'int',
+                'not null' => FALSE,
+                'sortable' => TRUE,
+                'views' => TRUE,
+                'not null' => TRUE,
+            ),
+            'subscribed' => array(
+                'description' => 'Check if the user is subscribed',
+                'type' => 'int',
+                'sortable' => TRUE,
+                'views' => TRUE,
+                'not null' => TRUE,
+                'default' => 0,
+            ),
+            'user_pw' => array(
+                'description' => 'the personal user password',
+                'type' => 'varchar',
+                'length' => 1024,
+                'not null' => TRUE,
+                'default' => '',
+            ),
+        ),
+
+        'primary key' => array('newsletter_order_id'),
+    );
+
+    return $schema;
+}
+
+/**
+ * Implements hook_update_N()
+ */
+
+function indekonews_conversion_update_7000() {
+    drupal_install_schema('newsletter_order');
+}

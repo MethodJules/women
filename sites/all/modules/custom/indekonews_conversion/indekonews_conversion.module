@@ -1,0 +1,317 @@
+<?php
+
+/*
+ * Wenn sich ein Nutzer für ein Event interessiert
+ */
+function indekonews_conversion_menu() {
+    $items['event_interest_newsletter/%/%/%'] = array(
+        'title' => 'Interesse am Event',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'indekonews_conversion_interest',
+    );
+
+    /*
+     * Wenn sich ein Nutzer für ein Event anmelden möchte
+     */
+    $items['event_participation_newsletter/%/%/%'] = array(
+        'title' => 'Teilnahme am Event',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'indekonews_conversion_participation',
+    );
+
+    /*
+     * Wenn sich ein Nutzer nicht mehr für ein Event interessiert
+     */
+    $items['event_no_interest_newsletter/%/%/%'] = array(
+        'title' => 'Interesse am Event',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'indekonews_conversion_no_interest',
+    );
+
+    /*
+     * Wenn sich ein Nutzer von einem Event abmelden möchte
+     */
+    $items['event_no_participation_newsletter/%/%/%'] = array(
+        'title' => 'Teilnahme am Event',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'indekonews_conversion_no_participation',
+    );
+
+    /*
+     * Wenn sich ein Nutzer vom Newsletter abmelden möchte
+     */
+    $items['unsubscribe_from_newsletter/%/%'] = array(
+        'title' => 'Newsletter abbstellen',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'indekonews_conversion_unsubscribe_from_newsletter',
+        'file' => 'indekonews_conversion_order.inc'
+    );
+
+    /*
+     * Wenn sich ein Nutzer zum Newsletter anmelden möchte
+     */
+    $items['sign_on_newsletter'] = array(
+        'title' => 'Newsletter bestellen',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'access callback' => 'user_is_logged_in',
+        'page callback' => 'indekonews_conversion_sign_on_from_website',
+        'file' => 'indekonews_conversion_order.inc',
+    );
+
+    return $items;
+}
+
+//Funktion wird aufgerufen, wenn sich der Nutzer aus dem Newsletter heraus für ein Event nicht mehr interessiert.
+function indekonews_conversion_no_interest() {
+    $eventID = arg(1);
+    $userID = arg(2);
+    $pw = arg(3);
+
+    $validationCheck = false;
+
+    $sql = "SELECT * FROM {newsletter_order} as news WHERE news.uid = ". $userID;
+    $result = db_query($sql);
+
+    foreach($result as $r) {
+        if (!strcmp($r->user_pw,$pw) && $r->uid == $userID) {
+            $validationCheck = true;
+        }
+    }
+
+    if($validationCheck) {
+        //Eintrag wird aus der Activities-Tabelle entfernt.
+        db_query("DELETE  FROM {interestedGroups} WHERE userID = :userID AND eventID = :eventID",
+            array(":userID" => $userID, ":eventID" => $eventID));
+
+        return "Sie interessieren sich ab sofort nicht mehr für dieses Event";
+    } else {
+        return "Es ist ein Fehler aufgetreten. Bitte nutzen Sie den entsprechenden Button in Ihrem Newsletter.
+        Sollten weiterhin Fehler auftreten,<br>wenden Sie sich bitte an den Administrator!";
+
+    }
+}
+
+//Funktion wird aufgerufen, wenn sich der Nutzer aus dem Newsletter heraus für ein Event abmelden möchte
+function indekonews_conversion_no_participation() {
+
+    $eventID = arg(1);
+    $userID = arg(2);
+    $pw = arg(3);
+
+    $validationCheck = false;
+
+    $sql = "SELECT * FROM {newsletter_order} as news WHERE news.uid = ". $userID;
+    $result = db_query($sql);
+
+    foreach($result as $r) {
+        if (!strcmp($r->user_pw,$pw) && $r->uid == $userID) {
+            $validationCheck = true;
+        }
+    }
+
+    if($validationCheck) {
+        global $global_link;
+        //Datenbankeintrag wird aktualisiert
+        db_query("UPDATE {interestedGroups} SET accept = 0 AND interested = 1 WHERE userID = :userID AND eventID = :eventID",
+            array(":userID" => $userID, ":eventID" => $eventID));
+
+        $no_interest = $global_link . 'event_no_interest_newsletter/'.$eventID.'/'.$userID . '/' . $pw;
+
+        //Außerdem die Frage, ob weiterhin Interesse besteht
+        $string = "Du nimmst nicht mehr teil. Schade. Besteht weiterhin Interesse?<br>";
+        $string .= "<a href=" . $no_interest . ">Ich bin nicht mehr interessiert</a>";
+    } else {
+        $string = "Es ist ein Fehler aufgetreten. Bitte nutzen Sie den entsprechenden Button in Ihrem Newsletter.
+        Sollten weiterhin Fehler auftreten,<br>wenden Sie sich bitte an den Administrator!";
+    }
+
+    return $string;
+}
+
+//Funktion wird aufgerufen, wenn sich der Nutzer aus dem Newsletter heraus für ein Event anmelden möchte
+function indekonews_conversion_participation() {
+    $eventID = arg(1);
+    $userID = arg(2);
+    $pw = arg(3);
+
+    $validationCheck = false;
+
+    $sql = "SELECT * FROM {newsletter_order} as news WHERE news.uid = ". $userID;
+    $result = db_query($sql);
+
+    foreach($result as $r) {
+        if (!strcmp($r->user_pw,$pw) && $r->uid == $userID) {
+            $validationCheck = true;
+        }
+    }
+
+    if ($validationCheck) {
+        $user = user_load($userID);
+        $eventNode = node_load($eventID);
+
+        //Check, ob er Bereits für Event angemeldet ist
+        $bo = indekonews_conversion_check_participation($userID, $eventID);
+
+        //Wenn ja, keine DB-Funktion
+        if($bo) {
+            $string = "Hallo ".$user->name."!<br>Sie nehmen bereits an folgendem Event teil:<br>".$eventNode->title;
+
+            //Wenn nein, DB-Eintrag erstellen
+        } else {
+            indekonews_conversion_add_participation($userID, $eventID);
+            $string = "Hallo ".$user->name."!<br>Sie nehmen ab sofort an folgendem Event teil:<br>".$eventNode->title;
+
+        }
+    } else {
+        $string = "Es ist ein Fehler aufgetreten. Bitte nutzen Sie den entsprechenden Button in Ihrem Newsletter.
+        Sollten weiterhin Fehler auftreten,<br>wenden Sie sich bitte an den Administrator!";
+    }
+
+    return $string;
+}
+
+//Funktion wird aufgerufen, wenn sich der Nutzer aus dem Newsletter heraus für ein Event interessiert.
+function indekonews_conversion_interest() {
+
+    $eventID = arg(1);
+    $userID = arg(2);
+    $pw = arg(3);
+
+    $validationCheck = false;
+
+    $sql = "SELECT * FROM {newsletter_order} as news WHERE news.uid = ". $userID;
+    $result = db_query($sql);
+
+    foreach($result as $r) {
+        if (!strcmp($r->user_pw,$pw) && $r->uid == $userID) {
+            $validationCheck = true;
+        }
+    }
+
+    if ($validationCheck) {
+        $user = user_load($userID);
+        $eventNode = node_load($eventID);
+
+        //Check, ob er sich bereits für ein Event interessiert
+        $bo = indekonews_conversion_check_interest($userID, $eventID);
+
+        //Wenn ja, keine DB-Funktion
+        if($bo) {
+            $string = "Hallo ".$user->name."!<br>Sie interessieren sich bereits für folgendes Event:<br>".$eventNode->title;
+
+            //Wenn nein, DB-Eintrag erstellen
+        } else {
+            indekonews_conversion_add_interest($userID, $eventID);
+            $string = "Hallo ".$user->name."!<br>Sie interessieren sich ab sofort für folgendes Event:<br>".$eventNode->title;
+
+        }
+    } else {
+        $string = "Es ist ein Fehler aufgetreten. Bitte nutzen Sie den entsprechenden Button in Ihrem Newsletter.
+        Sollten weiterhin Fehler auftreten,<br>wenden Sie sich bitte an den Administrator!";
+    }
+
+    return $string;
+}
+
+//Funktion checkt, ob Nutzer sich bereits für ein Event interessiert
+function indekonews_conversion_check_interest($uid, $eventID) {
+
+    $check = db_query("SELECT * FROM {interestedGroups} as groups WHERE groups.userID = :uid AND groups.eventID = :eventID AND groups.interested = 1",
+        array(":uid" => $uid, ":eventID" => $eventID));
+
+    //Wenn Eintrag vorhanden ist, interessiert sich Benutzer bereits...
+    if($check->rowCount()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//Funktion checkt, ob Benutzer bereits für ein Event angemeldet ist
+function indekonews_conversion_check_participation($uid, $eventID) {
+
+    $check = db_query("SELECT * FROM {interestedGroups} as groups WHERE groups.userID = :uid AND groups.eventID = :eventID AND groups.accept = 1",
+        array(":uid" => $uid, ":eventID" => $eventID));
+
+    //Wenn Eintrag vorhanden ist, ist Nutzer bereits angemeldet...
+    if($check->rowCount()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+//Funktion fügt DB-Eintrag hinzu, wenn sich ein Nutzer aus dem Newsletter heraus für ein Event interessiert.
+function indekonews_conversion_add_interest($uid, $eventID) {
+
+    //Projekt-ID des Nutzers wird benötigt
+    $projectID = indekonews_conversion_get_projektID($uid);
+
+    $id = db_query("SELECT MAX(interestedgroups_id) FROM interestedGroups")->fetchCol();
+    $id[0]++;
+
+    db_query("INSERT INTO {interestedGroups} VALUES (:pk, :userID,:eventID, :interested,:accept,:projectID)",
+        array("pk" => $id[0], ":userID" => $uid, ":eventID" => $eventID, ":interested" => 1,  ":accept" => 0, ":projectID" => $projectID));
+}
+
+//Funktion fügt DB-Eintrag hinzu, wenn sich ein Nutzer aus dem Newsletter heraus für ein Event anmeldet.
+function indekonews_conversion_add_participation($uid, $eventID) {
+
+    //ProjektID des Nutzers wird benötigt
+    $projectID = indekonews_conversion_get_projektID($uid);
+
+    $id = db_query("SELECT MAX(interestedgroups_id) FROM interestedGroups")->fetchCol();
+    $id[0]++;
+
+    $num = indekonews_conversion_check_interest($uid, $eventID);
+
+    if($num) {
+        db_query("UPDATE {interestedGroups} SET accept = 1 WHERE userID = :userID AND eventID = :eventID",
+            array(":userID" => $uid, ":eventID" => $eventID));
+    } else {
+        db_query("INSERT INTO {interestedGroups} VALUES (:pk, :userID,:eventID, :interested,:accept,:projectID)",
+            array("pk" => $id[0], ":userID" => $uid, ":eventID" => $eventID, ":interested" => 1,  ":accept" => 1, ":projectID" => $projectID));
+    }
+}
+
+//Funktion holt sich ProjektID des übergebenen Users
+function indekonews_conversion_get_projektID($userID) {
+
+    $result = db_query("SELECT DISTINCT verbund.field_verbundprojekt_target_id, abk.field_abk_rzung_projekt_value from {field_data_field_verbundprojekt} as verbund Inner JOIN {field_data_field_abk_rzung_projekt} AS abk ON verbund.field_verbundprojekt_target_id = abk.entity_id WHERE verbund.entity_id = :userID",
+        array(":userID" => $userID));
+
+    if($result->rowCount()) {
+        foreach ($result as $r) {
+            $projectID = $r->field_verbundprojekt_target_id;
+        }
+        return $projectID;
+    }
+}
+
+function indekonews_conversion_user_insert(&$edit, $account, $category) {
+
+    $id = db_query("SELECT MAX(newsletter_order_id) FROM newsletter_order")->fetchCol();
+    $id[0]++;
+
+    $pass = indekonews_conversion_generateRandomString(40);
+
+    db_query("INSERT INTO {newsletter_order} VALUES (:id,:uid,1,:pid)",
+        array(":id" => $id, ":uid" => $account->uid, ":pid" => $pass));
+}
+
+function indekonews_conversion_generateRandomString($length) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
+

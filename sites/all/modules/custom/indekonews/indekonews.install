@@ -1,0 +1,92 @@
+<?php
+
+/**
+ * Implement hook_schema()
+ */
+
+function indekonews_schema() {
+    $schema = array();
+
+    $schema['newsletter_settings'] = array(
+            'description' => 'The table the personal newsletter settings of the user',
+            'fields' => array(
+                'newsletter_settings_id' => array(
+                    'description' => 'The primary identifier for newsletter_settings.',
+                    'type' => 'int',
+                    'unsigned' => TRUE,
+                    'not null' => TRUE,
+                ),
+                'uid' => array(
+                    'description' => 'The user id',
+                    'type' => 'int',
+                    'not null' => FALSE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                    'not null' => TRUE,
+                ),
+                'event' => array(
+                    'description' => 'Setting for events (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => FALSE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                    'not null' => TRUE,
+                ),
+                'project' => array(
+                    'description' => 'Setting for project (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => FALSE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                    'not null' => TRUE,
+                ),
+                'publication' => array(
+                    'description' => 'Setting for publication (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => TRUE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                ),
+                'user_registration' => array(
+                    'description' => 'Setting for user registration (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => TRUE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                ),
+                'knowledge_map' => array(
+                    'description' => 'Setting for knowledge_map (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => TRUE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                ),
+                'term' => array(
+                    'description' => 'Setting for term (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => TRUE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                ),
+                'taxonomy' => array(
+                    'description' => 'Setting for taxonomy (true(1) or false(0))',
+                    'type' => 'int',
+                    'not null' => TRUE,
+                    'sortable' => TRUE,
+                    'views' => TRUE,
+                ),
+            ),
+
+            'primary key' => array('newsletter_settings_id'),
+        );
+
+    return $schema;
+}
+
+/**
+ * Implements hook_update_N()
+ */
+
+function indekonews_update_7000() {
+    drupal_install_schema('newsletter_settings');
+}

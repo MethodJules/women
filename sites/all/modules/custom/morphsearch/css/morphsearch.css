@@ -1,0 +1,235 @@
+/*
+ * Style the morphological search block.
+ */
+.morphsearch-select, .publication-select {
+    margin-bottom: 0.5rem;
+    width: 100%;
+}
+.morphsearch-type {
+    margin: 0!important;
+    padding: 0!important;
+    width: 100%;
+}
+#morphsearch-select-block, #morphsearch-publication-filter-block {
+    display: none;
+}
+
+/*
+ * Fix cut off chosen placeholder text and search field (caused if element is hidden on load)
+ */
+#block-morphsearch-morphsearch-block .chosen-container .chosen-choices .search-field {
+    width: 100% !important;
+}
+
+/*
+ *  Chosen placeholder text as label
+ */
+.chosen-container-single .chosen-default, .chosen-container-multi .chosen-choices li.search-field input[type="text"] {
+    color: #444!important;
+    width: 100% !important;
+    font-family: sans-serif;
+}
+
+/*
+ * Position info icon on the right side of fulltext search field
+ */
+#fulltextsearchrow * {
+    margin-bottom: 0;
+    position: relative;
+}
+
+/*
+ * Position info icon within input field
+ */
+#fulltextsearch {
+    background-image: url("images/icon_info.svg");
+    background-position: right center;
+    background-repeat: no-repeat;
+    background-size: 21px 21px;
+    padding-right: 23px;
+    width: 100%;
+    /* position: absolute;
+    margin-bottom: 1em!important; */
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+/*
+ * Position invisible div element above info icon to display mouseover tooltip
+ */
+#fulltextsearchinfo {
+    width: 24px;
+    height: 26.5px;
+    float: right;
+    position: relative;
+    z-index: 10;
+    margin-top: -26.5px;
+    margin-bottom: 2px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+/*
+ * Style search syntax tooltip
+ */
+#searchSyntax {
+    white-space: nowrap;
+    width: 100%;
+    font-size: 14px;
+    line-height: 21px;
+    color: #444;
+}
+#searchSyntax tr td:first-child {
+    text-align: right;
+}
+
+/*
+ * Style notifications.
+ */
+.qtip { max-width: none !important; }
+
+.searchNotification {
+    font-size: 14px;
+    line-height: 21px;
+    color: #444;
+}
+
+/*
+ * Search button positioning
+ */
+#searchbutton {
+    float: right;
+    display: table-cell;
+    margin-right: 0;
+}
+
+#morphsearch-reset {
+    display: table;
+}
+
+#morphsearch-save {
+    display: table;
+}
+
+.morphblocktable {
+    display: table;
+    width: 100%;
+    margin-top: 1em;
+}
+
+.morphblockcell {
+    display: table-cell;
+    vertical-align: middle;
+}
+#morphsearch-select-block-toggle {
+    margin-bottom: 0;
+    display: block;
+    outline:none;
+}
+
+/*
+ * Style block containing the different content types
+ */
+.morphsearch-type-block {
+    width: 100%;
+    /* margin-top: 3em; */
+    margin-bottom: 1em;
+    text-decoration: none;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;          /* Likely future */
+}
+
+.morphsearch-type-block .type {
+    width: auto;
+    display: inline-block;
+    margin: 0 0.5em 0.5em 0; /* top, right, bottom, left */
+    padding: 0.5em;
+    background-color: DarkGray;
+    color: #fff;
+    cursor: pointer;
+}
+
+.morphsearch-type-block .type.selected{
+    background-color: #666;
+}
+
+/*
+ * Publication search elements initially hidden
+ */
+#morphsearch-publication-block {
+    /* display: none; */ /* CR ID 67-1 always display publication search block */
+    margin-top: 1em;
+}
+
+/*
+ * overwrite drupal .form-item style
+ */
+#morphsearch-publication-filter-block, #morphsearch-publication-filter-block > div {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+#morphsearch-publication-block-toggle {
+    margin-bottom: 0!important;
+    outline:none;
+}
+
+/*
+ * Pop-up window for saved search delete confirmation.
+ */
+.confirmation {
+    position: absolute; /* absolute */
+    background-color: white;
+    border: 1px solid;
+    padding: 5px;
+    text-align: center;
+    z-index: 10000;
+}
+
+/*
+ * Delete link for saved search, filter link.
+ */
+.actions .delete:hover, .toggleFilter:hover {
+    cursor: pointer;
+}
+
+/*
+ * Show more/show less filter link.
+ */
+.toggleFilter {
+    padding: 10px;
+}
+
+/*
+ * Delete link, search results link.
+ */
+.actions .delete, .searchResultLink {
+    padding: 10px;
+}
+
+/*
+ * Actions Div.
+ */
+.actions {
+    display: inline-block;
+    float: right;
+    position: relative;
+}
+
+/*
+ * First column of the table of saved search.
+ */
+.firstColumn {
+    width: 30%;
+}
+
+/*
+ * Display immediate child elements inline.
+ */
+.inline > * {
+    display: inline;
+}

@@ -1,0 +1,126 @@
+.img_area {
+    display: block;
+    vertical-align: middle;
+    line-height: 25px;
+    //height: 20px;
+}
+
+.img_id{
+    font-weight: bold;
+    width: 25px;
+    padding: 0px 3px;
+    text-align: right;
+    border: none!important;
+    background: none;
+}
+
+.img_label{
+    display: inline;
+    margin-left: 10px;
+}
+
+.addAreaButton {
+    background: url("images/add.gif") no-repeat scroll 0 0 transparent;
+    cursor: pointer;
+    border: 0px;
+    width: 20px;
+    height: 15px;
+    margin-left: 10px;
+    padding: 0px;
+    box-shadow: 0px 0px 0px rgba(0,0,0,0);
+    margin-top: 10px;
+}
+
+.removeAreaButton {
+    background: url("images/delete.gif") no-repeat scroll 0 0 transparent;
+    cursor: pointer;
+    border: 0px;
+    width: 20px;
+    height: 15px;
+    margin-left: 10px;
+    padding: 0px;
+    box-shadow: 0px 0px 0px rgba(0,0,0,0);
+    display: inline-block;
+}
+
+.addAreaError{
+    border-color: red!important;
+    border-width: 2px!important;
+    border-style: solid!important;
+}
+
+.canvasError {
+    border-color: red!important;
+    background-color: rgba(255, 0, 0, 0.50)!important;
+    border-width: 3px!important;
+}
+
+.labelAreaErrorText{
+    padding-top: 8px;
+    color: red;
+}
+
+.field-name-field-markierte-bereiche, #edit-field-markierte-bereiche {
+    display: none;
+}
+
+/* Hide areas button inline */
+#edit-field-wk-bild .inline-block > * {
+    display: inline-block;
+}
+
+/* element to show / hide areas on click [ID 103] */
+#button_hightlight,
+#button-hide {
+    visibility: hidden;
+    background-color: #444;
+    padding: 0.3em;
+    color: #fff;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+#button_hightlight:hover,
+#button-hide:hover {
+    background-color: #666;
+    cursor: pointer;
+}
+#button-hide {
+    margin-left: 3em;
+}
+
+/* Area title width */
+.img_alt {
+    width: 70%;
+}
+
+/*
+ * Hide tags on knowledge map.
+ */
+#edit-field-tag-combined {
+    display: none;
+}
+
+/* Bring selected area to top (knowledge map create/edit mode) */
+.canvas-top {
+    z-index: 100 !important; /* has priority over canvas-hidden */
+}
+
+/* Hide drawn areas behind the knowledge map image (knowledge map create/edit mode)*/
+.canvas-hidden {
+    z-index: -1;
+}
+
+/* Border around image during knowledge map create/edit */
+.pic_container img {
+    border: 1px solid #ccc;
+}
+
+/* Prevent text select on knowledge map elements */
+.pic_container * {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}

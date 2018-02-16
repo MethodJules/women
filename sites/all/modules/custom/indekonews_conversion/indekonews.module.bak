@@ -1,0 +1,345 @@
+<?php
+
+require('helperfunctions.php');
+require_once 'indekonews_newsletter_sceleton.inc';
+
+
+function indekonews_menu()
+{
+
+    drupal_set_message("HEY");
+    /*
+    * Auf dieser Seite kann der Newsletter verschickt werden
+    */
+    $items['indekonews'] = array(
+        'title' => 'indekonews',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'access callback' => 'check_user_has_role',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('indekonewsForm')
+    );
+
+    $items['indekonews_list'] = array(
+        'title' => 'indekonews',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'access callback' => 'check_user_has_role',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('indekonews_create_mailing_list')
+    );
+
+    /*
+    * Auf dieser Seite kann der Newsletter vom Benutzer personalisiert werden
+    */
+    $items['newsletter_generator'] = array(
+        'title' => 'newsletter generator',
+        'type' => MENU_CALLBACK,
+        'access arguments' => array('access content'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('newsletter_generator'),
+        'file' => 'indekonews.generator.inc',
+    );
+
+    /*
+     * Auf dieser Seite wird der Newsletter online angezeigt
+     */
+    $items['newsletter_preview'] = array(
+        'title' => 'newsletter preview',
+        'type' => MENU_CALLBACK,
+        'access callback' => 'user_is_logged_in',
+        'page callback' => 'indekonews_get_newsletter_preview',
+        'page arguments' => array('newsletter_preview'),
+        'file' => 'indekonews_newsletter_preview.inc',
+    );
+
+    $items['admin/config/user-interface/indekonews'] = array(
+        'title' => 'IndekoNews',
+        'access callback' => true,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('indekonews_erstellenForm'),
+        'file' => 'indekonews_admin_functions.inc',
+    );
+
+    return $items;
+}
+
+/*
+ * In dieses Formular kann der Nutzer eine Mail-Adresse eingeben und einen Newsletter abschicken
+ */
+function indekonewsForm($form, &$form_submit)
+{
+    $form['bodyTextField'] = array(
+        '#type' => 'textfield',
+        '#require' => TRUE,
+        '#title' => t('Hier die gewünschte Mail-Adresse eintragen:'),
+        '#default_value' => t('')
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Sende Aktuelle Newsletter',
+        '#submit' => array('sendEmail_submit')
+    );
+
+    $form['submitAll'] = array(
+        '#type' => 'submit',
+        '#value' => 'Sende AN ALLE',
+        '#submit' => array('sendEmail_show_mailing_list')
+    );
+
+    return $form;
+}
+
+function check_user_has_role()
+{
+    global $user;
+    if (in_array('administrator', $user->roles)) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+function sendEmail_show_mailing_list($form, &$form_state)
+{
+    drupal_goto("/indekonews_list");
+}
+
+/*
+ * Diese Funktion baut die Mail zusammen
+ */
+function sendEmail_submit($form, &$form_state)
+{
+    drupal_set_message("Nur an mich senden");
+    global $user;
+    $user = user_load($user->uid);
+
+    $activities = indekonews_getAllPersonalActivities($user);
+
+    $email = $form_state['values']['bodyTextField'];
+
+    $newsletter_counter = indekonews_create_newsletter_edition();
+
+    $sql = "SELECT * FROM {newsletter_order} AS orders WHERE orders.uid =" . $user->uid;
+
+    $user_pass = db_query($sql);
+
+    foreach ($user_pass as $u) {
+        $pw = $u->user_pw;
+    }
+
+    $emailBody = indekonews_buildMail($pw, date("d.m.y"), $newsletter_counter, $user, $activities, true);
+    $emailSubject = "InDeKo.News";
+    $emailFrom = "indekonews@indeko.de";
+
+    $params = array(
+        'subject' => $emailSubject,
+        'body' => $emailBody,
+    );
+
+//Die Mail wird versendet
+    drupal_mail('indekonews', 'newsletter', $email, language_default(), $params, $emailFrom);
+    drupal_set_message("Mail wurde versendet!");
+}
+
+
+/*
+ * Diese Funktion sendet die fertige Mail
+ */
+function indekonews_mail($key, &$message, $params)
+{
+    switch ($key) {
+        case 'newsletter':
+            $headers = array(
+                'MIME-Version' => '1.0',
+                'Content-Type' => 'text/html; charset=UTF-8;',
+                'Content-Transfer-Encoding' => '8Bit',
+                'X-Mailer' => 'Drupal'
+            );
+
+            foreach ($headers as $key => $value) {
+                $message['headers'][$key] = $value;
+            }
+            $message['subject'] = $params['subject'];
+            $message['body'] = array(0 => t($params['body']));
+            break;
+    }
+}
+
+function indekonews_getUsers()
+{
+    $users = db_query("SELECT * FROM {newsletter_order} AS orders WHERE orders.subscribed = 1");
+    return $users;
+}
+
+/**
+ * Diese Funktion gibt die Liste mit News für den Newsletter zurück. Dabei wird vorher geschaut, welche News der jeweilige
+ * Nutzer angezeigt bekommen wil.
+ * @param $user das aktuelle User-Objekt
+ * @return $result ein Ergebnis der Datenbankabfrage mit allen News, die angezeigt werden sollen.
+ */
+function indekonews_getAllPersonalActivities($user)
+{
+
+    $result = db_query("SELECT * FROM {newsletter_settings} AS settings WHERE settings.uid = :id;",
+        array(":id" => $user->uid));
+
+    $date = new DateTime();//now
+    $interval = new DateInterval('P1M');// P[eriod] 1 M[onth]
+    $date->sub($interval);
+    $before_date = $date->format('Y-m-d');
+
+    $query = "SELECT * FROM {activities} AS act WHERE DATE(created) > '".$before_date."' AND ";
+    $testString = $query;
+
+    if ($result->rowCount()) {
+        $test = 0;
+        foreach ($result as $r) {
+
+            if ($r->event == 1) {
+                $query .= " act.content_type='event'";
+                $test = 1;
+            }
+            if ($r->project == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='projekt'";
+                $test = 1;
+            }
+            if ($r->publication == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='publication'";
+                $test = 1;
+            }
+            if ($r->user_registration == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='user'";
+                $test = 1;
+            }
+            if ($r->knowledge_map == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='knowledge_map'";
+                $test = 1;
+            }
+            if ($r->term == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='term'";
+                $test = 1;
+            }
+            if ($r->taxonomy == 1) {
+                if ($test == 1) {
+                    $query .= " OR";
+                }
+                $query .= " act.content_type='taxonomy'";
+                $test = 1;
+            }
+
+            $query .= " ORDER BY created desc ";
+        }
+    }
+
+    if (!strcmp($query, $testString)) {
+        $query = "SELECT * FROM {activities} WHERE content_type = 'test'}";
+    }
+
+    $activities = db_query($query);
+    return $activities;
+}
+
+function indekonews_create_newsletter_edition()
+{
+    $edition = "InDeKo-News Ausgabe ";
+
+    $id = db_query("SELECT MAX(edition_id) FROM newsletter_edition")->fetchCol();
+    $id[0]++;
+
+    $heute = date("Y-m-d H:i:s");
+
+    $edition .= $id[0] . "/" . date("o");
+
+    $sql = "INSERT INTO {newsletter_edition} VALUES (" . $id[0] . ",'" . $heute . "','" . $edition . "')";
+    db_query($sql);
+
+
+    drupal_set_message($edition);
+
+    return $edition;
+}
+
+function indekonews_create_mailing_list()
+{
+
+    $result = db_query("SELECT * FROM {newsletter_order} as news INNER JOIN {users} as users ON news.uid = users.uid");
+
+    $content = "<table><th>Nr.</th><th>uid</th><th>Name</th> <th>Mail-Adresse</th>";
+
+    $nr = 1;
+    foreach ($result as $item) {
+        $content .= "<tr><td>$nr</td><td>$item->uid</td><td>$item->name</td><td>$item->mail</td></tr>";
+        $nr++;
+    }
+
+    $content .= "</table>";
+
+
+    $form['test']['form_item'] = array(
+        '#type' => 'markup',
+        '#title' => t('My Form Item'),
+        '#prefix' => $content,
+    );
+
+    $form['back'] = array(
+        '#type' => 'submit',
+        '#value' => 'ABSENDEN',
+        '#submit' => array('indekonews_submit_to_all')
+    );
+
+
+
+    return $form;
+}
+
+function indekonews_submit_to_all()
+{
+    drupal_set_message("An alle senden");
+    $userList = indekonews_getUsers();
+    $newsletter_counter = indekonews_create_newsletter_edition();
+    foreach ($userList as $u) {
+        $user = user_load($u->uid);
+        $email = $user->mail;
+        drupal_set_message($email);
+        $activities = indekonews_getAllPersonalActivities($user);
+
+        drupal_set_message($newsletter_counter);
+        $sql = "SELECT * FROM {newsletter_order} AS orders WHERE orders.uid =" . $user->uid;
+
+        $user_pass = db_query($sql);
+
+        foreach ($user_pass as $u) {
+            $pw = $u->user_pw;
+        }
+
+        $emailBody = indekonews_buildMail($pw, date("d.m.y"), $newsletter_counter, $user, $activities, true);
+        $emailSubject = "InDeKo.News";
+        $emailFrom = "indekonews@indeko.de";
+
+        $params = array(
+            'subject' => $emailSubject,
+            'body' => $emailBody,
+        );
+
+        //Die Mail wird versendet
+        drupal_set_message("MAIL WURDE NOCH NICHT VERSENDET, DA NOCH KEINE FREIGABE!");
+        //drupal_mail('indekonews', 'newsletter', $email, language_default(), $params, $emailFrom);
+        //drupal_set_message("Mail wurde versendet!");
+    }
+}

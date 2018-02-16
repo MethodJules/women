@@ -1,0 +1,6 @@
+name = Netzwerk
+description = NWA Analyse
+core = 7.x
+dependencies[] = d3
+files[] = network_calculation.inc
+files[] = network_data_layer.inc

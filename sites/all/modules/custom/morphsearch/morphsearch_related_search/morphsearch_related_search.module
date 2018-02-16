@@ -1,0 +1,137 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: Mende
+ * Date: 6/29/2017
+ * Time: 3:41 PM
+ */
+/**
+ * @file
+ * Create search links closely related to the current full text search.
+ */
+
+
+/**
+ * Implements hook_apachesolr_search_page_alter().
+ * Adds related search links on top of the search results.
+ */
+function morphsearch_related_search_apachesolr_search_page_alter(array &$build, array $search_page) {
+  $env_id = $search_page['env_id'];
+
+  if (apachesolr_has_searched($env_id)) {
+    $query = apachesolr_current_query($env_id);
+
+    if (!empty($query)) {
+      // Extract full text string from current search query.
+      $fullQuery = $query->getParam('q');
+      preg_match('/\(\(\((.*?)\)\)\)/', $fullQuery, $match);
+
+      if(isset($match[1])) {
+        $fullTextKeyword = $match[1];
+      } else {
+        $fullTextKeyword = '*';
+      }
+
+      if ($search_page && !empty($fullTextKeyword) && $fullTextKeyword !== '*') {
+        // Get related keywords.
+        $relatedKeywords = morphsearch_related_search_get_related_terms($fullTextKeyword);
+
+        // Create related search links.
+        $links = array();
+        $searchData = morphsearch_get_search_template();
+
+        foreach($relatedKeywords as $key=>$relatedKeyword) {
+          $searchData['fulltext'] = $relatedKeyword;
+          $searchJson = (drupal_json_encode($searchData));
+
+          // Link with title, path and additional attributes
+          $links[$key] = l($relatedKeyword,
+                      $search_page['search_path'] . '/(((' . $relatedKeyword . ')))',
+                            array('attributes' => array(
+                              'class' => array('searchResultLink'),
+                              'data-input' => $searchJson,
+                            )));
+        }
+
+        // Add related search links on top of the search page.
+        $relatedLinks = array(
+          '#theme' => 'related_search_links',
+          '#fullTextKeyword' => $fullTextKeyword,
+          '#links' => $links,
+        );
+
+        array_unshift($build, $relatedLinks);
+      }
+    }
+  }
+}
+
+
+/**
+ * TODO "Ontologie Modul"
+ * Retrieves keywords related to the full text keyword used for the current search.
+ *
+ * @param string $keyword
+ *   The full text search keyword.
+ *
+ * @return array
+ *   Array of related keywords (strings).
+ */
+function morphsearch_related_search_get_related_terms($keyword) {
+  $relatedKeywords = array('Prototyp', 'InDeKo', 'Hildesheim');
+
+  return $relatedKeywords;
+}
+
+
+/**
+ * Implements hook_theme().
+ * Registers the theme function for related search links.
+ */
+function morphsearch_related_search_theme() {
+  return array(
+    // Shows a list of related searches.
+    'related_search_links' => array(
+      'variables' => array('fullTextKeyword' => null, 'links' => NULL),
+    ),
+  );
+}
+
+
+/**
+ * Default theme function for related search keywords. Displays the full text
+ * keywords and related search links.
+ *
+ * @param array $variables
+ *   Associative array of the defined variables in @see morphsearch_related_search_theme().
+ *
+ * @return string
+ *   HTML output
+ */
+function theme_related_search_links($variables) {
+  $output = '<div class="related-search">';
+  $output .= '<dl class="form-item"><dt><strong>';
+  // TODO prototype msg
+  $output .= '(Statischer Prototyp) ' . t('Related searches for') . ' ' . check_plain($variables['fullTextKeyword']) . ': ';
+  $output .= '</strong></dt>';
+
+  foreach ((array) $variables['links'] as $link) {
+    $output .= '<dd>' . $link . '</dd>';
+  }
+  $output .= '</dl></div>';
+
+  return $output;
+}
+
+
+/**
+ * Implements hook_help().
+ * Displays help link to README.txt in module overview (admin/modules).
+ */
+function morphsearch_related_search_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#morphsearch_related_search':
+      $readme = file_get_contents(drupal_get_path('module', 'morphsearch_related_search') . '/README.txt');
+      return module_exists('markdown') ? filter_xss_admin(module_invoke('markdown', 'filter', 'process', 0, -1, $readme)) : '<pre>' . check_plain($readme) . '</pre>';
+  }
+}

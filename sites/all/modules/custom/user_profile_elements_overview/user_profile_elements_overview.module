@@ -1,0 +1,99 @@
+<?php
+/**
+ * @file
+ * Allows created elements of the user to be displayed in the user profile.
+ */
+
+/**
+ * Implements hook_user_view_alter().
+ *
+ * Displays a list of content the current user created on his own user profile page.
+ *
+ * @param $build A renderable array representing the user.
+ */
+function user_profile_elements_overview_user_view_alter(&$build) {
+  global $user;
+
+  // display list of created content only on the user's own profile page
+  if ($build['#account']->uid === $user->uid) {
+    $build['elementsoverviewhtml'] = array(
+      '#markup' => elements_overview_html(array('biblio', 'wissenskarte', 'projekt', 'analysereport', 'forschungsergebnis')),
+      '#weight' => '6',
+      '#attached' => array('css' => array(drupal_get_path('module', 'user_profile_elements_overview') . "/css/user_profile_elements_overview.css"))
+    );
+  }
+}
+
+/**
+ * Creates HTML to filter various Indeko content types.
+ *
+ * @param array $staticFilter Indeko content types like Wissenskarte, Forschungsergebnis etc.
+ * @return string Returns the HTML
+ */
+function elements_overview_html($staticFilter = []) {
+    global $user;
+    $uid = $user->uid;
+    $html = "";
+
+    $query = "SELECT nid, type, title FROM {node}
+            WHERE uid = :uid and type in (:staticFilter)
+            ORDER BY changed DESC;";
+    $results = db_query($query, array(":uid" => $uid, ":staticFilter" => $staticFilter));
+    $results = $results->fetchAll();
+
+    $html .= "<h3>" . t('Elements created') . "</h3>";
+    $html .= "<ol class='elementsoverview' style='list-style-type:none;'>";
+
+    /*
+     * Displays different icons for various content types of created elements.
+     */
+    foreach($results as $result) {
+
+        $html .= "<li>";
+
+        /*
+         * The icons, which are used, were created for the Indeko project.
+         * Only the default icon is from fontawesome.io (MIT, SIL OFL 1.1).
+         */
+        switch($result->type) {
+            case "biblio":
+                $html .= "<i class='icon biblio' aria-hidden='true' title='" . t('Publication') . "'></i>";
+                break;
+            case "wissenskarte":
+                $html .= "<i class='icon wissenskarte' aria-hidden='true' title='" . t('Knowledge Map') . "'></i>";
+                break;
+            case "projekt":
+                $html .= "<i class='icon projekt' aria-hidden='true' title='" . t('Project') . "'></i>";
+                break;
+            case "analysereport":
+                $html .= "<i class='icon analysereport' aria-hidden='true' title='" . t('Analysis Report') . "'></i>";
+                break;
+            case "forschungsergebnis":
+                $html .= "<i class='icon forschungsergebnis' aria-hidden='true' title='" . t('Research Result') . "'></i>";
+                break;
+            default:
+                $html .= "<i class='fa fa-file default' aria-hidden='true' title='" . $result->type . "'></i>";
+        }
+
+        /* Links to the View of the created element. */
+        $url = url('node/'. $result->nid);
+        $html .= "<a href='$url'>" . htmlspecialchars(urldecode($result->title)) . "</a>";
+        $html .= "</li>";
+    }
+
+    $html .= "</ol>";
+
+    return $html;
+}
+
+/**
+ * Implements hook_help().
+ * Display help link to README.txt in module overview (admin/modules).
+ */
+function user_profile_elements_overview_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#user_profile_elements_overview':
+      $readme = file_get_contents(drupal_get_path('module', 'user_profile_elements_overview') . '/README.txt');
+      return module_exists('markdown') ? filter_xss_admin(module_invoke('markdown', 'filter', 'process', 0, -1, $readme)) : '<pre>' . check_plain($readme) . '</pre>';
+  }
+}

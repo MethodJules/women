@@ -1,0 +1,17 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg width="150" height="200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+					<rect x="1" y="1" width="20" height="20" fill="#FF0000" stroke="black"/>
+					<text class="text" x="25" y="15" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 1</text>
+					<rect x="1" y="26" width="20" height="20" fill="#00FF00" stroke="black"/>
+					<text class="text" x="25" y="40" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 2</text>
+					<rect x="1" y="51" width="20" height="20" fill="#0000FF" stroke="black"/>
+					<text class="text" x="25" y="65" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 3</text>
+					<rect x="1" y="76" width="20" height="20" fill="#FFFF00" stroke="black"/>
+					<text class="text" x="25" y="90" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 4</text>
+					<rect x="1" y="101" width="20" height="20" fill="#00FFFF" stroke="black"/>
+					<text class="text" x="25" y="115" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 5</text>
+					<rect x="1" y="126" width="20" height="20" fill="#FF00FF" stroke="black"/>
+					<text class="text" x="25" y="140" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 6</text>
+					<rect x="1" y="151" width="20" height="20" fill="#FFFFFF" stroke="black"/>
+					<text class="text" x="25" y="165" font-family="sans-serif" font-size="14px" fill="black">Fokusgruppe 7</text>								
+</svg>

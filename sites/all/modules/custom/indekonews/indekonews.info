@@ -1,0 +1,6 @@
+name = InDeKoNews
+description = Das Modul für die Newserstellung und Versendung von InDeKo.Navi.
+core = 7.x
+dependencies[] = news_trigger
+
+files[] = indekonews_newsletter_sceleton.inc

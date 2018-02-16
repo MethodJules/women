@@ -1,0 +1,258 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: mende
+ * Date: 17.09.2017
+ * Time: 14:36
+ */
+
+/**
+ * @file imageswap.module
+ * Provides a block that displays one of multiple possible images. The image is
+ * swapped for another image after a configurable interval of hours.
+ */
+
+
+/**
+ * Implements hook_block_info().
+ */
+function imageswapblock_block_info() {
+  $blocks['imageswapblock'] = array(
+    'info' => t('Image Swap Block'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ * Displays an image in the block.
+ */
+function imageswapblock_block_view($delta = '') {
+  $block = array();
+
+  if ($delta === 'imageswapblock') {
+    $imageIds = variable_get('isb_imagefids');
+    $imageCount = count($imageIds);
+
+    if ($imageCount > 0) {
+      $swapInterval = variable_get('isb_interval');
+      $index = imageswapblock_get_image_index($imageCount, $swapInterval);
+      $imageUri = imageswapblock_get_image_uri($index, $imageIds);
+
+      $block['content'] = theme('image', array('path' => $imageUri));;
+    }
+  }
+
+  return $block;
+}
+
+
+/**
+ * Implements hook_block_configure().
+ * Adds configuration options to the image swap block.
+ */
+function imageswapblock_block_configure($delta = '') {
+  $form = array();
+
+  if ($delta === 'imageswapblock') {
+    $form['isb_interval'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Time interval (in hours)'),
+      '#default_value' => variable_get('isb_interval', 24),
+      '#description' => t('Time between swapping the displayed image.'),
+      '#size' => 60,
+      '#required' => TRUE,
+      '#element_validate' => array('element_validate_integer_positive'),
+    );
+
+    $form['isb_nextswap'] = array(
+      '#markup' => "Time until next image swap: " .
+        imageswapblock_get_time_until_next_swap(variable_get('isb_interval', 24)),
+    );
+
+    $form['isb_imagefolder'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Image Directory'),
+      '#default_value' => variable_get('isb_imagefolder', 'public://imageswapblock'),
+      '#description' => t('A file system path where the images that shall be displayed are stored. This directory must exist and contain image files (.png, .jpg, .jpeg, .gif).'),
+      '#size' => 200,
+      '#required' => TRUE,
+      '#element_validate' => array('imageswapblock_validate_path'),
+    );
+
+    $form['isb_files'] = array(
+      '#prefix' => "<div><ul>",
+      '#markup' =>  imageswapblock_html_images(),
+      '#suffix' => "</ul></div>"
+    );
+  }
+
+  return $form;
+}
+
+
+/**
+ * Implements hook_block_save().
+ * Saves images from configured file path and configuration variables.
+ */
+function imageswapblock_block_save($delta = '', $edit = []) {
+  if($delta === 'imageswapblock') {
+    variable_set('isb_interval', $edit['isb_interval']);
+    variable_set('isb_imagefolder', $edit['isb_imagefolder']);
+
+    // Get all image files from configured system path
+    $images = file_scan_directory($edit['isb_imagefolder'], '/.*.(png|jpg|jpeg|gif)$/i');
+    $image_fids = array();
+
+    // Add images to the site's database.
+    foreach($images as $image) {
+      $image->status = FILE_STATUS_PERMANENT;
+      $image->filemime = file_get_mimetype($image->uri);
+
+      // Check if image is already in database.
+      $existing_files = file_load_multiple(array(), array('uri' => $image->uri));
+      if (count($existing_files)) {
+        $existing = reset($existing_files);
+        $image->fid = $existing->fid;
+      }
+
+      file_save($image);
+      $image_fids[] = $image->fid;
+    }
+
+    variable_set('isb_imagefids', $image_fids);
+  }
+}
+
+
+/**
+ * Checks if the configured system path exists and contains at least one image.
+ *
+ * @param array $element
+ *  The form API textfield element to be validated.
+ */
+function imageswapblock_validate_path($element) {
+  $path = $element['#value'];
+
+  // Check if path is set and exists.
+  if ($path !== '' && is_dir($path)) {
+    $images = file_scan_directory($path, '/.*.(png|jpg|jpeg|gif)$/i');
+
+    // Check if path contains images.
+    if (empty($images)) {
+      form_error($element, t("Directory !path does not contain any images!", array('!path' => $element['#value'])));
+    }
+
+  } else {
+    form_error($element, t("Directory !path does not exist!", array('!path' => $element['#value'])));
+  }
+}
+
+
+/**
+ * Creates HTML list of all loaded images and marks the currently active image.
+ *
+ * @return string
+ *   HTML list of added images.
+ */
+function imageswapblock_html_images() {
+  $html = '';
+  $imagefids = variable_get('isb_imagefids');
+
+  if ($imagefids !== NULL) {
+    $noImages = count($imagefids);
+    $activeImageIndex = imageswapblock_get_image_index($noImages,variable_get('isb_interval'));
+
+    for ($i = 0; $i < $noImages; $i++) {
+      $image = file_load($imagefids[$i]);
+      $html .= "<li>" . $image->filename;
+
+      if ($i === $activeImageIndex) {
+        $html .= " " . t("(currently active)");
+      }
+
+      $html .= "</li>";
+    }
+  }
+
+  return $html;
+}
+
+
+/**
+ * Computes the index of the image that should be displayed.
+ *
+ * @param int $imageCount
+ *   The total number of images to be cycled through.
+ * @param int $interval
+ *   The time interval between each image swap in hours.
+ *
+ * @return int
+ *   The index of the image to be displayed.
+ */
+function imageswapblock_get_image_index($imageCount, $interval) {
+  $dateStart = new DateObject('2000-01-01 23:59:59', date_default_timezone());
+  $dateNow = date_now();
+  $differenceInIntervals = $dateStart->difference($dateNow, 'hours') / $interval;
+  $nextSwap = $interval*60*60 - ($dateStart->difference($dateNow, 'seconds') % ($interval*60*60));
+
+  $countdown = format_interval($nextSwap, 3);
+  $index = $differenceInIntervals % $imageCount;
+
+  return $index;
+}
+
+
+/**
+ * Gets the URI of the image that should be displayed.
+ *
+ * @param int $index
+ *   The array index of the image in variable 'isb_imagefids'.
+ * @param array $imageIds
+ *   An array of file IDs.
+ *
+ * @return string
+ *   The URI of the image to be displayed.
+ */
+function imageswapblock_get_image_uri($index, $imageIds) {
+  $image = file_load($imageIds[$index]);
+  $imageUri = $image->uri;
+
+  return $imageUri;
+}
+
+
+/**
+ * Computes the time until the next image is displayed.
+ *
+ * @param int $interval
+ *   The time interval between each image swap in hours.
+ *
+ * @return string
+ *   Time until the next image swap.
+ */
+function imageswapblock_get_time_until_next_swap($interval) {
+  $dateStart = new DateObject('2000-01-01 23:59:59', date_default_timezone());
+  $dateNow = date_now();
+  $nextSwap = $interval*60*60 - ($dateStart->difference($dateNow, 'seconds') % ($interval*60*60));
+
+  $countdown = format_interval($nextSwap, 3);
+
+  return $countdown;
+}
+
+
+/**
+ * Implements hook_help().
+ * Display help link to README.txt in module overview (admin/modules).
+ */
+function imageswapblock_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#imageswapblock':
+      $readme = file_get_contents(drupal_get_path('module', 'imageswapblock') . '/README.txt');
+      return module_exists('markdown') ? filter_xss_admin(module_invoke('markdown', 'filter', 'process', 0, -1, $readme)) : '<pre>' . check_plain($readme) . '</pre>';
+  }
+}

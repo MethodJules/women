@@ -1,0 +1,596 @@
+/*
+ * Fix line breaks for plain text text areas.
+ */
+.node-forschungsergebnis .field-type-text-with-summary,
+.node-analysereport .field-type-text-with-summary,
+.node-projekt .field-type-text-with-summary,
+.node-wissenskarte .field-type-text-with-summary,
+.field-name-field-beschreibung {
+    white-space: pre-line;
+}
+
+/*
+ * Full width input fields.
+ */
+#edit-title, #edit-field-aufgabe-und-0-value,
+#edit-field-f-rderprogramm-und-0-value, #edit-field-webseite-projekt-und-0-url {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/*
+ * Display drupal messages below the navigation bar.
+ */
+div.messages {
+    margin-top: 70px!important;
+}
+
+
+/* Footer logo */
+.contextual-links-region img[src*="Logo_PT_DLR_deutsch_neu.jpg"] {
+    margin-top: 0 !important;
+}
+
+/* Remove unnecessary margins from node create forms */
+.node-form .form-select, .form-item-field-webseite-projekt-und-0-url {
+    margin: 0;
+}
+.node-form input[id*="-add-entityconnect-"] {
+    margin: 0;
+}
+
+/* Add shopping card to menu bar (teaser for future functionality) */
+#block-system-main-menu > .menu:before {
+    visibility: hidden;
+    font-family: FontAwesome;
+    display: inline-block;
+    padding: 1rem;
+    content: "\f07a";
+    font-size: x-large;
+}
+
+/* =============================================================================
+    Custom content type icons for search results and user menu created content list
+   ========================================================================== */
+
+/*
+ * Display content type icons.
+ */
+.icon.wissenskarte {
+    content: '';
+    background-image: url("../images/atlas/type_wissenskarte3.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+.icon.biblio {
+    content: '';
+    background-image: url("../images/atlas/type_publikation.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+.icon.analysereport {
+    content: '';
+    background-image: url("../images/atlas/type_analysenreport.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+.icon.forschungsergebnis {
+    content: '';
+    background-image: url("../images/atlas/type_forschungsergebnis.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+.icon.projekt {
+    content: '';
+    background-image: url("../images/atlas/type_projekt.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+
+/* Icon size on search results page */
+.search-result .icon {
+    padding-left: 35px;
+    font-size: 21px;
+}
+
+/* Icon size on knowledge map search result block */
+#block-views-searchresults-block .icon {
+    padding-left: 24px;
+}
+
+
+/* Icon size on user menu */
+.user-profile .elementsoverview .icon {
+    padding-left: 20px;
+}
+
+
+/* =============================================================================
+    Search results
+   ========================================================================== */
+/*
+ * Style search result box.
+ */
+.search-result {
+    background-color: #e7e7e7;
+    border-radius: 14px;
+}
+.search-result .title {
+    margin: 0;
+}
+.search-result .field-name-title {
+    width: 93%;
+}
+.search-result .group-left, .search-result .group-right {
+    padding: 0.5em;
+    box-sizing: border-box
+}
+.ds-2col-stacked-fluid.node-wissenskarte .group-right {
+    width:auto;
+}
+.ds-2col-stacked-fluid.node-wissenskarte .group-left {
+    width:auto;
+}
+
+/*
+ * Style search result user
+ */
+.search-result .username,
+.search-result .field-name-field-projektleiter a {
+    background-color: #969696;
+    color: white;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    padding: 4px 5px;
+    text-decoration: none;
+}
+
+.search-result .field-name-author,
+.search-result .field-name-field-projektleiter {
+    margin-bottom: 10px;
+}
+/*
+ * Search result file download and external project website icons
+ */
+.search-result .field-name-field-webseite-projekt,
+.search-result .field-name-field-attached-file {
+    display: inline-block;
+    float: right;
+    padding-right: 0.5em;
+    margin-left: auto;
+    line-height: 30px;
+    text-decoration: none;
+}
+.search-result .field-name-field-attached-file .file-icon,
+.search-result .field-name-field-attached-file .file-size {
+    display: none;
+}
+.search-result .field-name-field-attached-file .file a:before {
+    font-family: FontAwesome;
+    content: "\f1c1";
+    font-size: x-large;
+}
+.search-result .field-name-field-webseite-projekt a {
+    padding-right: 25px !important;
+}
+
+/*
+ * Style search result title row.
+ */
+.group-header {
+    background-color: lightgray;
+    border-top-right-radius: 14px;
+    border-top-left-radius: 14px;
+    padding-bottom: 1px;
+    display: flex;
+}
+.group-header > * {
+    display: inline-block;
+}
+.group-header a {
+    vertical-align: sub;
+}
+
+/*
+ * Add user icon (+space) in front of user
+ */
+.search-result .field-name-field-projektleiter a::before,
+.search-result .username::before{
+    font-family: FontAwesome;
+    display: inline-block;
+    content: "\f007 \00a0";
+}
+
+/*
+ * Add preview icon to title row.
+ */
+.search-result .field-name-title .title a::after {
+    font-family: FontAwesome;
+    content: "\f002";
+    float: right;
+    padding-right: 0.5em;
+    padding-top: 3px;
+    font-size: large;
+    text-decoration: none;
+}
+
+/*
+ * Search result highlighting.
+ */
+.ds-search-highlight {
+    background-color: transparent;
+    font-weight: bold;
+}
+
+/*
+ * Search results csv export link in line with title
+ */
+.search_results_header * {
+    display: inline-block;
+    margin-top: auto;
+}
+
+/*
+ * CSV export icon float right of title.
+ */
+#exportcsv {
+    float: right;
+}
+
+/*
+ * Display related search links side by side
+ */
+.related-search dd {
+    display: inline;
+}
+
+/* =============================================================================
+    Knowledgemap Search Results Block
+   ========================================================================== */
+/* Hide the exposed AJAX widget */
+#views-exposed-form-searchresults-block {
+    display: none;
+}
+
+/*
+ * Truncate long labels in knowledge map search result block
+ */
+#block-views-searchresults-block .views-field-label,
+#block-views-searchresults-block .block-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Fixed height of content region, title fixed */
+#block-views-searchresults-block .block-content {
+    overflow-y: auto;
+    height: 45vh;
+}
+
+
+/* =============================================================================
+    Content type Projekt
+   ========================================================================== */
+
+/*
+ * Styling of content type project (primary method of bkm).
+ * TODO absolete cause project got restructured?
+ */
+.display_table.bkm section {
+    display: inline-table;
+}
+.display_table.bkm section > *{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.display_table.bkm section:nth-child(2n) {
+    margin-left: 2em;
+    margin-right: 2em;
+}
+.display_table.bkm ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+
+/* =============================================================================
+    Content type Forschungsergebnis
+   ========================================================================== */
+.field-type-taxonomy-term-reference.field-label-inline {
+    margin-top: 0.83em;
+    margin-bottom: 0;
+}
+
+.group-attribute-bkm.field-group-fieldset {
+    margin-top: 1.5em;
+}
+
+/* list style publications */
+.field-name-field-publication.field-type-entityreference.view-mode-full .field-item,
+.field-name-projekt-fe.view-mode-full .views-field-field-publication > .field-content {
+    box-sizing: border-box;
+    display:list-item;
+    list-style-type: square;
+    list-style-position: inside;
+}
+
+/* =============================================================================
+    Content type Wissenskarte
+   ========================================================================== */
+
+/* Shape selector width */
+.img_shape {
+    width: 120px;
+}
+
+/* Prevent knowledge map from being selectable and draggable to prevent input accidents */
+.unselectable {
+    /* For Opera and <= IE9, we need to add unselectable="on" attribute onto each element */
+    /* Check this site for more details: http://help.dottoro.com/lhwdpnva.php */
+    -moz-user-select: none; /* These user-select properties are inheritable, used to prevent text selection */
+    -webkit-user-select: none;
+    -ms-user-select: none; /* From IE10 only */
+    user-select: none; /* Not valid CSS yet, as of July 2012 */
+
+    -webkit-user-drag: none; /* Prevents dragging of images/divs etc */
+    user-drag: none;
+}
+
+/* Backup hide in case module fails */
+.node-wissenskarte .field-name-field-markierte-bereiche,
+#edit-field-markierte-bereiche, #edit-field-tag-combined {
+    display: none;
+}
+
+/* =============================================================================
+    FlexSlider (Slideshow for Content Type 'Wissenskarte')
+   ========================================================================== */
+
+/* Fix cut off navigation arrows. */
+.flex-direction-nav {
+    line-height: 1;
+}
+
+/* Remove margin on header for image title. */
+#slider_wk .slides h1 {
+    margin-top: 0;
+}
+
+/* Reduce bottom margin of the image. */
+#slider_wk.flexslider {
+    margin-bottom: 10px;
+}
+
+/*
+ * Display (scaled) image in the center of the slider.
+ * This minimizes big images.
+ */
+#slider_wk .slides img {
+    width: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Show pointer on mouse over for slider carousel. */
+#carousel_wk img:hover {
+    cursor: pointer;
+}
+
+
+/* =============================================================================
+   Content type publication (biblio)
+   ========================================================================== */
+/* Hide author category and category table header */
+.biblio-contributor-category {
+    display: none;
+}
+table[id^="edit-biblio-contributors"] > thead:nth-child(1) > tr:nth-child(1) > th:nth-child(3) {
+    display: none;
+}
+
+/* Show all authors during publication creation.
+   Despite setting of 4 initial authors, only 2 are displayed on form. The other two are hidden. */
+#edit-biblio-contributors > tbody tr.draggable {
+    display: table-row !important;
+}
+
+
+/* =============================================================================
+    Chosen
+   ========================================================================== */
+/*
+ * Chosen module sets absolute width depending on length of select options.
+ * Limit chosen max width to encircling element width.
+ */
+.chosen-container {
+    max-width: 100%;
+    -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+    -moz-box-sizing: border-box;    /* Firefox, other Gecko */
+    box-sizing: border-box;
+}
+
+/* Set chosen width for content types */
+#forschungsergebnis-node-form .chosen-container,
+#projekt-node-form .chosen-container,
+#biblio-node-form .chosen-container {
+    min-width: 50%;
+    width: auto !important;
+}
+
+/* Save space for inline new content button */
+#edit_field_umsetzungspartner_und_chosen, #edit_field_publication_und_chosen, #edit_field_project_und_chosen,
+#edit_field_projektpartner_und_chosen, #edit_field_umpartner_und_chosen, #edit_field_institutionen_und_chosen{
+    max-width: 80%;
+}
+
+/* Sponsor logo position quick fix */
+img[src*="Logo_PT_DLR_deutsch_neu.jpg"] {
+    margin-top: 0 !important;
+}
+
+
+/* =============================================================================
+    Morphsearch Sort Block
+   ========================================================================== */
+/* Style title */
+#block-morphsearch-sort-morphsearch-sort .block-title {
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* Remove list marker and margins */
+#block-morphsearch-sort-morphsearch-sort .item-list > ul {
+    list-style: none;
+    padding: 0;
+    margin-right: 0.5em;
+    margin-left: 0.5em;
+    margin-bottom: 0.25em;
+}
+
+/* Display sort filters in two columns */
+#block-morphsearch-sort-morphsearch-sort .item-list > ul > li {
+    margin: 0;
+    margin-bottom: 0.25em;
+    float: left;
+    width: 50%;
+}
+
+/* Display first sort filter (relevancy) in one row */
+#block-morphsearch-sort-morphsearch-sort .item-list > ul > li:first-of-type {
+    width: 100%;
+}
+
+/* Style sort filter as radio button */
+.searchlink:before {
+    display: inline-block;
+    text-decoration: none;
+    font-family: FontAwesome;
+    padding-right: 0.25em;
+    content: "\f10c";
+}
+
+/* Style selected sort filter as selected radio button */
+.searchlink.active:before {
+    content: "\f111";
+}
+
+
+/* =============================================================================
+    Knowledgemap Block (Morphsearch Block conversion)
+   ========================================================================== */
+/* Display block vertically centered on viewport while creating or editing knowledge maps*/
+.block.knowledgemap {
+    position: fixed;
+    top: 50%;
+    transform: translate(0, -50%);
+    max-height: 70%;
+    z-index: 9000;
+    overflow: auto;
+}
+
+/* overflow scrollbar does not reduce block content width*/
+.block.knowledgemap .block-inner {
+    width: 224px;
+}
+
+/* Highlight block after drawing is finsihed */
+.block-morphsearch.drawfinished {
+    border-color: #2da046 !important;
+    border: 3px;
+    border-style: solid;
+}
+
+
+/* =============================================================================
+    Responsive Design
+    TODO Merge into responsive.custom.css
+   ========================================================================== */
+/* Blöcke in der Sidebar als überlagernde slide-in menu */
+@media screen and (min-width: 980px) {
+
+    .region-sidebar-second .block {
+        padding: 10px;
+        background-color: #e7e7e7;
+        box-shadow: 1px 2px 2px -3px #444;
+    }
+
+    #block-views-news-block:before,
+    #block-user-login:before {
+        color: #fff;
+        font-size: .75rem;
+        font-weight: bold;
+        padding: .5rem;
+        background-color: #52b166;
+        float: left;
+        position: absolute;
+        right: 100%;
+        border-top-left-radius: 3px;
+        border-bottom-left-radius: 3px;
+    }
+
+    #block-views-news-block:before {
+        content:'News';
+    }
+
+    #block-user-login:before {
+        content:'Login';
+    }
+
+    #block-views-news-block,
+    #block-user-login {
+        float: none;
+        position: fixed;
+        width:22%;
+        right: -22%;
+        margin: 0;
+        transition: right;
+        transition-duration: .5s;
+        z-index: 99999;
+    }
+
+    #block-user-login {
+        margin-top: 3rem;
+        z-index: 99998;
+        background-color: #cdcdcd;
+    }
+    #block-user-login:before {
+        background-color: #444;
+    }
+
+    #block-views-news-block:hover,
+    #block-user-login:hover {
+        right:0;
+        transition: right;
+        transition-duration: 1s;
+    }
+
+    /* Main content Bereich vergrößern */
+    #content-column .content-inner {
+        margin-right:0;
+    }
+}
+
+/* =============================================================================
+    Leaflet Maps
+    TODO
+   ========================================================================== */
+/* Quick fix, remove margin and padding to safe space */
+#views-exposed-form-research-map-research .chosen-container,
+#views-exposed-form-research-researchsite .chosen-container,
+#views-exposed-form-research-page .chosen-container {
+    margin: 0;
+    padding: 0;
+}
+/* Fix width of exposed morphological filters block in sidebar */
+#views-exposed-form-research-map-research .views-exposed-widget {
+    max-width: 100%;
+    padding-right: 0;
+}
+
+/* Fix IP Geolocation Views & Maps to point marker icon tip at geo location instead of icon center.
+ * Has to be adjusted if own custom marcer icons are used */
+.leaflet-tagged-marker > .leaflet-marker-icon {
+    margin-top: -42px !important;
+}

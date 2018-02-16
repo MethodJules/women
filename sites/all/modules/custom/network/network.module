@@ -1,0 +1,121 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: hofer
+ * Date: 07.01.2017
+ * Time: 13:33
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function network_menu() {
+
+
+    $items['netzwerk/setup/%'] = array(
+        'title' => 'Netzwerkanalyse Setup',
+        'description' => 'Konfiguriert NWA',
+        'access callback' => TRUE,
+        'page callback' => 'network_setup',
+        'page arguments' => array(2),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'network_calculation.inc'
+    );
+
+    $items['netzwerk/calc/%'] = array(
+       'title' => 'Network Analysis Calculation',
+        'description' => 'Calculates common SNA numbers',
+        'access callback' => TRUE,
+        'page callback' => 'network_calculation',
+        'page arguments' => array(2),
+        'type' => MENU_CALLBACK,
+    ) ;
+
+
+
+  return $items;
+}
+
+function form_change_node_type($form, &$form_state) {
+
+    $form['node_type'] = array(
+        '#title' => t('Author/Publication'),
+        '#type' => 'select',
+        '#description' => 'Please choose the node type.',
+        '#options' => array(
+            'author' => t('authors'),
+            'publication' => t('publication'),
+        ),
+        '#default_value' => 'author',
+        //'#attributes' => array('onchange' => 'hello()'),
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Submit'),
+    );
+
+    return $form;
+}
+
+function form_change_node_type_submit(&$form, &$form_state) {
+    //dsm($form_state['values']);
+    //network_setup('publication');
+    //dsm($form_state['values']);
+    //dsm($form_state['values']['node_type']);
+    if ($form_state['values']['node_type'] == 'author') {
+        drupal_goto('netzwerk/setup/author');
+    } elseif ($form_state['values']['node_type'] == 'publication') {
+        drupal_goto('netzwerk/setup/publication');
+    } else {
+        drupal_set_message(t('No common node type was chosen.'), 'warning');
+    }
+
+}
+
+//Network Calculation
+function network_calculation($value){
+    drupal_json_output('Hat geklappt!');
+}
+
+
+
+//Block
+function network_block_info(){
+    $blocks['network'] = array(
+        'info' => t('Netzwerk'),
+    );
+
+    return $blocks;
+}
+
+/**
+ * @param $delta
+ * Implements hook_block_view()
+ */
+function network_block_view($delta){
+    $block = array();
+
+    switch ($delta){
+        case 'network':
+            $block['subject'] = t('Node Types');
+            $block['content'] = drupal_get_form('form_change_node_type');
+            break;
+    }
+
+    return $block;
+}
+
+/**
+ * Implement hook_init()
+ *
+ */
+//function network_init(){
+//    drupal_add_js(drupal_get_path('module', 'network') . '/network.js', array('scope' => 'footer'));
+//}
+
+
+
+
+

@@ -1,0 +1,5 @@
+core = "7.x"
+description = "A module to merge nodes"
+name = "NodeMerge"
+files[] = nodeMerge.module
+

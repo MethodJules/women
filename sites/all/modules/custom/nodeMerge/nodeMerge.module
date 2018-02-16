@@ -1,0 +1,85 @@
+<?php
+// in allen nodes wird ein button eingefügt
+function NodeMerge_node_view($node, $view_mode, $langcode) {
+    $form = drupal_get_form('redirect_button_form');
+
+    $node->content['redirect_button'] = $form;
+
+
+
+}
+// funktion die einen Button als form implentiert
+function redirect_button_form($form, &$form_submit) {
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('addToEbook'),
+        '#submit' => array('saveNid_callback'),
+
+    );
+
+
+    return $form;
+}
+
+function saveNid_callback($form){
+    if ( ! isset($_SESSION['nid']) ){
+        $_SESSION['nid'] = array();
+    }
+
+    // testen mit $node->nid und vorher abfrage ob null 
+    // hole die node id aus dem node
+    if (arg(0) == 'node') {
+        $nid = arg(1);
+    }
+
+
+
+    $value = array();
+    $sessionNid = $_SESSION['nid'];
+    //  hole alle nid's aus dem sessionObjekt
+    foreach ($sessionNid as $item){
+        array_push($value, $item);
+    }
+    //wenn die neue nid nich enthalten ist füge sie hinzu
+    if(!in_array($nid, $sessionNid) && $nid != 0) {
+        array_push($value, $nid);
+
+        $_SESSION['nid'] = $value;
+    }
+    // cache leeren um anzeige(zahl) im menuLink zu aktualiesieren
+    drupal_flush_all_caches();
+
+}
+
+function nodeMerge_menu() {
+
+    if (!empty($_SESSION['nid'])) {
+        $testTitle = count($_SESSION['nid']);
+        
+    } else {
+        $testTitle = 0;
+    }
+    $items['admin/nodeMerge'] = array(
+
+        'title' => 'Inhalt:'.$testTitle ,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('nodeAnzeige_form'),
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+        'file' =>'nodeMerge.admin.inc'
+    );
+
+    $items['admin/nodeMerge/download'] = array(
+
+        'title' => 'Download',
+        'page callback' => 'nodeMerge',
+        'access callback' => TRUE,
+        'type' => MENU_NORMAL_ITEM,
+        'file' =>'nodeMerge.admin.inc'
+    );
+
+    return $items;
+
+}
+
+?>

@@ -1,0 +1,81 @@
+body { padding:50px 0px 0px 0px; z-index:0;}
+h1 {color: #2da046; font-weight:bold; font-size: 28px;}
+h2 {color: #2da046; font-weight:bold; font-size: 20px; }
+h3 {color: #2da046; font-weight:bold; font-size: 16px;}
+hr { border:1px solid #2da046}
+
+a{color:#2da046;text-decoration:none}
+a:focus,a:hover{color:#2da046; text-decoration:underline}
+
+img {	
+    margin:0px;
+    padding:0px;
+    vertical-align: top;
+}
+
+.row-header{
+    margin:0px auto;
+    padding:0px auto;
+}
+
+.row-content {
+    margin:0px auto;
+  }
+
+
+.navbar-inverse {
+     background: #e7e7e7;
+}
+
+
+.navbar-inverse .navbar-nav > .active > a,
+.navbar-inverse .navbar-nav > .active > a:hover,
+.navbar-inverse .navbar-nav > .active > a:focus {
+    color: #c8c8c8;
+    background: #444;
+}
+
+.navbar-inverse .navbar-nav .open .dropdown-menu> li> a,
+.navbar-inverse .navbar-nav .open .dropdown-menu {
+	background: #e7e7e7;    
+}
+
+.navbar-inverse .navbar-nav .open .dropdown-menu> li> a:hover {
+	color: #FFF;
+	background: #444; 
+}
+
+.well {margin-top: 20px; padding-top: 5px;}
+
+.form-required {color: red; }
+.btn-primary {color:#fff;background-color:#2da046; border-color:#083511; width: 100%}
+.btn-primary:hover {color:#fff;background-color:#5aaf6c;border-color:#083511;width: 100%}
+.btn-primary:focus {color:#fff;background-color:#2da046; border-color:#083511; width: 100%}
+.btn-primary:active {color:#fff;background-color:#2da046; border-color:#083511; width: 100%}
+.btn-primary.active.focus,.btn-primary.active:focus,.btn-primary.active:hover,.btn-primary:active.focus,.btn-primary:active:focus,.btn-primary:active:hover,.open>.dropdown-toggle.btn-primary.focus,.open>.dropdown-toggle.btn-primary:focus,.open>.dropdown-toggle.btn-primary:hover{color:#fff;background-color:##2da046;border-color:#122b40}
+
+.legende {padding-top: 10px; }
+
+.sidebar-nav {
+       list-style: none;
+}
+
+.sidebar-nav li {
+    text-indent: -30px;   
+}
+
+.sidebar-nav li a {   
+    text-decoration: none;  
+}
+
+.sidebar-nav li a:hover {
+    text-decoration: underline; cursor: pointer;    
+}
+
+.sidebar-nav li a:active,
+.sidebar-nav li a:focus {
+    text-decoration: none;
+}
+
+#infobox  {padding-top: 20px; padding-bottom: 10px;}
+#vis {padding-top: 50px; padding-bottom: 78px;}

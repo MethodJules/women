@@ -1,0 +1,80 @@
+<?php
+/**
+ * @file
+ * Allows trimmed comments to be displayed. New Comments will be displayed on top.
+ * The number of visible characters is configured in the JavaScript file.
+ */
+
+/**
+ * Implements Hook to attach JavaScript.
+ *
+ * @param $vars is called for every comment.
+ */
+function comments_shortener_preprocess_comment(&$vars) {
+    drupal_add_js(drupal_get_path('module', 'comments_shortener') . "/js/comments_shortener.js", array('scope' => 'footer'));
+    drupal_add_css(drupal_get_path('module', 'comments_shortener') . "/css/comments_shortener.css");
+}
+
+
+/**
+ * Implements hook_query_TAG_alter().
+ *
+ * Alter comments query to order by DESC as well as the default ASC.
+ *
+ * @param QueryAlterableInterface $query The comments query.
+ */
+function comments_shortener_query_comment_filter_alter(QueryAlterableInterface $query) {
+    $orderby = &$query->getOrderBy();
+
+    // Sorting for threaded comments.
+    if (isset($orderby['torder'])) {
+        // Sort by root parent first, then normal threaded.
+        $query->addExpression("SUBSTRING_INDEX(c.thread, '.', 1)", 'rparent');
+        $orderby = array('rparent' => 'DESC') + $orderby;
+    }
+    // Sorting for flat comments.
+    else if (isset($orderby['c.cid'])) {
+        $direction = 'DESC';
+
+        $orderby['c.cid'] = $direction;
+        $orderby = array('c.created' => $direction) + $orderby;
+    }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Ensures that the first page of comments is visible after submitting a comment.
+ *
+ * @param $form Nested array of form elements that comprise the form.
+ * @param $form_state The form state array.
+ * @param $form_id String representing the name of the form itself.
+ */
+function comments_shortener_form_alter(&$form, &$form_state, $form_id) {
+    if($form_id == 'comment_node_wissenskarte_form' && $form['#method'] == 'post') {
+        array_push($form['#submit'], 'redirectToFirstCommentPage');
+    }
+}
+
+/**
+ * Attaches the redirect to the first page of the comments to the submitted form.
+ *
+ * @param $form Nested array of form elements that comprise the form.
+ * @param $form_state The form state array.
+ */
+function redirectToFirstCommentPage($form, &$form_state) {
+    // Redirect to the first page
+    $form_state['redirect'][1]['query']['page'] = 0;
+}
+
+/**
+ * Implements hook_help().
+ * Display help link to README.txt in module overview (admin/modules).
+ */
+function comments_shortener_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#comments_shortener':
+      $readme = file_get_contents(drupal_get_path('module', 'comments_shortener') . '/README.txt');
+      return module_exists('markdown') ? filter_xss_admin(module_invoke('markdown', 'filter', 'process', 0, -1, $readme)) : '<pre>' . check_plain($readme) . '</pre>';
+  }
+}

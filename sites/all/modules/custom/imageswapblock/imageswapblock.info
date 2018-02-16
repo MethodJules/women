@@ -1,0 +1,8 @@
+name = "Image Swap Block"
+description = Provides a block that displays one of multiple possible images. The image is swapped for another image after a configurable interval of hours.
+core = 7.x
+
+dependencies[] = block
+dependencies[] = date
+
+configure = admin/structure/block/manage/imageswapblock/imageswapblock/configure

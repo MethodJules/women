@@ -1,0 +1,45 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: hofer
+ * Date: 22.11.2017
+ * Time: 18:38
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function xnavi_fokus_menu() {
+
+  $items['xnavi/fokus'] = array(
+    'title' => '',
+    'description' => 'Different visualization.',
+    'page callback' => 'fokus_create_page',
+    'access callback' => TRUE,
+  );
+
+  return $items;
+}
+
+
+function fokus_create_page() {
+  $wrapper_start = "<html>";
+  $wrapper_end = "</html>";
+  $title = "Titel der Webseite";
+  $content = "Inhalt der Webseite";
+  $header = "<head><meta charset='utf-8'><title>" . $title . "</title></head>";
+  $body = "<body>" . $content . "</body>";
+
+  $html = $header . $body;
+
+  $file = file_save_data(render($html), "public://fokus.html", FILE_EXISTS_REPLACE);
+  dsm($file);
+  $uri = file_entity_download_uri($file);
+  dsm($uri);
+  $dl_link = l(t('Download'), $uri['path'], array('query' => $uri['options']['query']));
+
+
+  return $wrapper_start . $html . "<br/>" . $file->uri . $wrapper_end . "<br/>" . $dl_link;
+
+
+}

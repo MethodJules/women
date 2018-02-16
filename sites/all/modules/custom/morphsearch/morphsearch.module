@@ -1,0 +1,1043 @@
+<?php
+/**
+ * @file
+ * Provides a dynamic search block containing fulltext search, content type search,
+ * morphological search by taxonomy terms and publication search.
+ */
+
+/**
+ * Implements hook_block_info(). Declares that the 'morphsearch-block' is provided by this module.
+ *
+ * @return array Each component of the which is an array of block information.
+ *   The array keys are the 'delta' values used in other block hooks.
+ */
+function morphsearch_block_info() {
+  $blocks['morphsearch-block'] = array(
+    'info' => t('Morphsearch Block'),
+    // The block is the same for every user on every page where it is visible.
+    'cache' => DRUPAL_CACHE_GLOBAL,
+    //'cache' => DRUPAL_NO_CACHE,
+    'status' => TRUE,
+    'region' => 'sidebar_first',
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view(). Generates the content of the 'morphsearch-block' block.
+ *
+ * @param string $delta : Which block to render. This is a unique identifier for the block within the module,
+ *                        defined in hook_block_info().
+ * @return array  Either an empty array so the block will not be shown or an array containing the following elements:
+ *              subject: The default localized title of the block. If the block does not have a default title,
+ *                       this should be set to NULL.
+ *              content: The content of the block's body. This may be a renderable array (preferable) or a string
+ *                       containing rendered HTML content. If the content is empty the block will not be shown.
+ */
+function morphsearch_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'morphsearch-block':
+      //drupal_add_js(drupal_get_path('module', 'morphsearch') . "/js/morphsearch.js", array('scope' => 'footer'));
+
+      $block['subject'] = t('Portal Search');
+      $block['content'] = createMorphsearchContent();
+
+      // Attach morphsearch CSS to block.
+      $block['content']['#attached']['css'] = array(
+          drupal_get_path('module', 'morphsearch') . "/css/morphsearch.css",
+      );
+
+      // Attach search path to make it available in js (Drupal.settings.morphsearch.searchPath).
+      $search_page = apachesolr_search_page_load('core_search');
+      $block['content']['#attached']['js'][] = array(
+        'type' => 'setting',
+        'data' => array('morphsearch' => array('searchPath' => $search_page['search_path'])),
+      );
+
+      // Attach morphsearch javascript to block.
+      $block['content']['#attached']['js'][] = array(
+        'data' => drupal_get_path('module', 'morphsearch') . "/js/morphsearch.js",
+        'scope' => 'footer',
+      );
+
+      // Attach search template for javascript functions to use.
+      $block['content']['#attached']['js'][] = array(
+        'type' => 'setting',
+        'data' => array('morphsearch' => array('searchTemplate' => drupal_json_encode(morphsearch_get_search_template()))),
+      );
+
+      break;
+  }
+  // add qtip2 library to display search syntax as a tooltip
+  libraries_load('qtip');
+
+  return $block;
+}
+
+
+/**
+ * Generate block content (fulltext search, morphological search, typographic search, submit, ...).
+ *
+ * @return array Renderable array containing the block's body.
+ */
+function createMorphsearchContent() {
+  // taxonomy SQL table/field info https://atlas-indeko.slack.com/archives/development/p1474617733000003
+  // DB queries als Referenz/Vergleich z.B. auch in den anderen custom Modulen von Julien (interestedGroups.module, ...)
+
+  $content = array();
+
+  // fulltext search element
+  $content['fulltextsearch'] = array(
+    '#type' => 'textfield',
+    '#maxlength' => 512,
+    '#title' => '',
+    '#attributes' => array(
+      'class' => array('morphsearch-fulltext'),
+      'id' => 'fulltextsearch',
+    ),
+    '#prefix' => '<div id="fulltextsearchrow">'
+  );
+
+  // search info icon
+  $content['fulltextsearchimage'] = array(
+    // fallback pure text tooltip if qtip2 plugin is not used to display full search syntax as html tooltip
+    '#markup' => '<span title="Pure text search syntax or point to location of full syntax description." ' .
+      'id="fulltextsearchinfo"></span>',
+    '#suffix' => '</div>',
+  );
+
+  // HTML help about the available search syntax
+  $content['searchSyntax'] = array(
+    '#markup' => buildSearchSyntax(),
+  );
+
+  // hidden empty select. Sometime Chosen would not load if there were no other select elements on the page
+  $content['loadchosen'] = array(
+    '#type' => 'select',
+    '#options' => array(0 => ''),
+    '#attributes' => array(
+      'class' => array('element-hidden'),
+    )
+  );
+
+  // all type search elements
+  $content['typesearch'] = array(
+    '#markup' => buildTypeSearchHtml(),
+    '#prefix' => '<div class="morphsearch-type-block">',
+    '#suffix' => '</div>',
+  );
+
+  // Create morphological search only if taxonomy module is installed and enabled
+  if (module_exists('taxonomy')) {
+
+    $content['morphsearch'] = array(
+      '#markup' => buildSearchHtml(),
+      '#prefix' => '<a href="javascript:void(0)" id="morphsearch-select-block-toggle">' . t('Morphological Search') .
+        '  <i class="fa fa-chevron-down" aria-hidden="true"></i></a>' .
+        '<div id="morphsearch-select-block">',
+      '#suffix' => '</div>',
+    );
+
+    // remove morphological search if no morphological box taxonomy terms were found
+    if ($content['morphsearch']['#markup'] === '') {
+      unset($content['morphsearch']);
+    }
+  }
+
+  // Create publication search filters only if biblio module is installed
+  if (module_exists('biblio')) {
+
+    // all publication related elements
+    $content['typesearchpublication'] = array(
+      '#prefix' => '<div id="morphsearch-publication-block">' .
+        '<a href="javascript:void(0)" id="morphsearch-publication-block-toggle">' . t('Publication Search') .
+        '  <i class="fa fa-chevron-down" aria-hidden="true"></i></a>' .
+        '<div id="morphsearch-publication-filter-block">',
+      '#suffix' => '</div></div>',
+    );
+
+    // publication years select
+    $content['typesearchpublication']['years'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_years(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'year',
+        'data-placeholder' => t('Year of Publication'),
+        'multiple' => 'multiple'
+      )
+    );
+
+    // publication authors select
+    $content['typesearchpublication']['authors'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_authors(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'author',
+        'data-placeholder' => t('Author'),
+        'multiple' => 'multiple'
+      )
+    );
+
+    // publication tags select
+    $content['typesearchpublication']['tags'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_keywords(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'tags',
+        'data-placeholder' => t('Keyword'),
+        'multiple' => 'multiple'
+      )
+    );
+
+    // publication publishers select
+    $content['typesearchpublication']['publishers'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_publishers(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'publisher',
+        'data-placeholder' => t('Publisher'),
+        'multiple' => 'multiple'
+      )
+    );
+
+    // publication locations select
+    $content['typesearchpublication']['locations'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_locations(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'location',
+        'data-placeholder' => t('Location'),
+        'multiple' => 'multiple'
+      )
+    );
+
+    // publication types select
+    $content['typesearchpublication']['types'] = array(
+      '#type' => 'select',
+      '#options' => biblio_get_types(),
+      '#attributes' => array(
+        'class' => array('publication-select'),
+        'data-type' => 'type',
+        'data-placeholder' => t('Type of Publication'),
+        'multiple' => 'multiple'
+      )
+    );
+  }
+
+  // reset search filter link
+  $content['reset'] = array(
+    '#markup' => '<a href="javascript:void(0)" id="morphsearch-reset">' . t('Reset Filter') . '</a>',
+    '#prefix' => '<div class="morphblocktable"><div class="morphblockcell">'
+  );
+
+  // save selected search block elements link (only for logged in users)
+  if (user_is_logged_in()) {
+    $content['savesearch'] = array(
+      '#markup' => '<a href="javascript:void(0)" id="morphsearch-save">' . t('Save Search') . '</a>',
+      '#suffix' => '</div>'
+    );
+  } else {
+    $content['closediv'] = array(
+      '#suffix' => '</div>'
+    );
+  }
+
+  // execute search button
+  $content['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Search'),
+    '#id' => 'searchbutton',
+    '#suffix' => '</div>',
+  );
+
+  return $content;
+}
+
+/**
+ * Creates the HTML for the dynamic morphological search block.
+ *
+ * @return string Contains the HTML code for the dynamic morphological search block.
+ */
+function buildSearchHtml() {
+
+  $query = "SELECT taxonomy_vocabulary.name AS vocabulary_name, taxonomy_vocabulary.machine_name AS vocabulary_machinename,
+              taxonomy_vocabulary.vid AS vocabulary_vid, taxonomy_term_data.name AS term_name, taxonomy_term_data.vid AS term_vid,
+              taxonomy_term_data.tid AS tid, taxonomy_vocabulary.weight AS vocabulary_weight, taxonomy_term_data.weight AS term_weight 
+            FROM {taxonomy_term_data} taxonomy_term_data
+            LEFT JOIN {taxonomy_vocabulary} taxonomy_vocabulary ON taxonomy_term_data.vid = taxonomy_vocabulary.vid
+            WHERE taxonomy_vocabulary.machine_name LIKE 'tax_morph_%'
+            ORDER BY vocabulary_name ASC, term_weight ASC;";
+  $result = db_query($query);
+
+  $html = '';
+
+// Removed: as per concept display label as placeholder text if dropdown element is not selected
+//  // Drupal translatable placeholder text if no element is selected
+//  $placeholderSingle = t("Choose an option");
+//  $placeholderMulti = t("Choose some options");
+
+  $currentLabel = '';
+  foreach ($result as $row) {
+
+    // new morphological item, add new label and select
+    if ($currentLabel !== $row->vocabulary_name) {
+      if ($currentLabel !== '') {
+        $html .= "</select>";
+      }
+
+      // Check for multivalued morphological item
+      if (strpos($row->vocabulary_machinename, 'tax_morph_m_') === FALSE) { // singleselect
+        $html .= "<select class='morphsearch-select' data-placeholder='$row->vocabulary_name'>";
+      } else { // multiselect
+        $html .= "<select multiple='multiple' class='morphsearch-select' size='1' data-placeholder='$row->vocabulary_name'>";
+      }
+
+      // add an empty select option for every select box
+      $html .= "<option value=''></option>";
+
+      $currentLabel = $row->vocabulary_name;
+    }
+
+    // add all options to the current select box
+    $html .= "<option value='$row->tid'>$row->term_name</option>";
+  }
+
+  // close tags after last element
+  if ($html !== '') {
+    $html .= "</select>";
+  }
+
+  return $html;
+}
+
+/**
+ * Creates the HTML for the dynamic type search block.
+ *
+ * @return string
+ *   Contains the HTML code for the dynamic type search block.
+ */
+function buildTypeSearchHtml() {
+  $html = '';
+
+  // All content types that should be visible in the typesearch block (set in module's configuration menu).
+  $visibleTypes = variable_get('morphsearch_typesearch_types', array());
+
+  // Add all set content types to type search block.
+  foreach (node_type_get_names() as $typeMachineName => $typeDescription) {
+    if (!empty($visibleTypes[$typeMachineName])) {
+      $html .= '<div class="type" data-name="' . $typeMachineName . '">' . t($typeDescription) . '</div>';
+    }
+  }
+
+  return $html;
+}
+
+/**
+ * Creates the HTML for the search syntax tooltip.
+ * TODO internationalization
+ *
+ * @return string Contains the HTML code for the search syntax tooltip.
+ */
+function buildSearchSyntax() {
+  $html = '';
+  $html .= '<div id="searchSyntax" class="element-hidden">
+              <table id="searchSyntaxTable">
+                <tr>
+                  <td>+</td>
+                  <td>Wortkombination (kann weggelassen werden)</td>
+                </tr>
+                <tr>
+                  <td>-</td>
+                  <td>Schließt Ergebnisse aus, die den Begriff enthalten</td>
+                </tr>
+                <tr>
+                  <td>"xxx"</td>
+                  <td>Ergebnisse mit exakter Übereinstimmung</td>
+                </tr>
+                <tr>
+                  <td>|</td>
+                  <td>Entweder-Oder-Suche</td>
+                </tr>
+                <tr>
+                  <td>*</td>
+                  <td>Wildcard-Suche, wenn Teile des Strings unbekannt sind</td>
+                </tr>
+                <tr>
+                  <td>Filetype:</td>
+                  <td>Suche nach bestimmten Dateitypen</td>
+                </tr>
+                <tr>
+                  <td>Autor: / Author:</td>
+                  <td>Suche nach bestimmten Autoren</td>
+                </tr>
+                <tr>
+                  <td>URL:</td>
+                  <td>Suche nach verlinkten Adressen</td>
+                </tr>
+                <tr>
+                  <td>ISBN: / DOI:</td>
+                  <td>Suche nach referenzierten ISBN/DOI-Nummern</td>
+                </tr>
+              </table>
+            </div>';
+  return $html;
+}
+
+
+/**
+ * Implements hook_libraries_info().
+ * Register qtip2 library to conviniently load it with libraries_load('qtip'); in any module.
+ *
+ * @return array An associative array whose keys are internal names of libraries and whose values are describing each library.
+ */
+function morphsearch_libraries_info() {
+  $libraries['qtip'] = array(
+    'name'              => 'qTip2',
+    'vendor url'        => 'http://qtip2.com',
+    'download url'      => 'http://qtip2.com/download',
+    'version arguments' => array(
+      'file'    => 'jquery.qtip.min.js',
+      'pattern' => '/\/\* qtip2 v([0-9\.]{5})/',
+      'lines'   => 1,
+    ),
+    'files' => array(
+      'js' => array(
+        'jquery.qtip.min.js',
+      ),
+      'css' => array(
+        'jquery.qtip.min.css',
+      ),
+    ),
+  );
+
+  return $libraries;
+}
+
+/**
+ * For some reason CURRENT_TIMESTAMP is not accepted as default value during schema definition,
+ * so change it on enabling the module.
+ */
+function morphsearch_enable() {
+  db_query('
+      ALTER TABLE {morphsearch_saved_input}
+      MODIFY timestamp TIMESTAMP NOT NULL
+      DEFAULT CURRENT_TIMESTAMP'
+  );
+}
+
+/**
+ * Implements hook_menu().
+ * Used to receive data from AJAX request and access the admin configuration menu.
+ *
+ * @return array An array of menu items.
+ */
+function morphsearch_menu() {
+  // Admin configuration menu.
+  $items['admin/config/search/morphsearch'] = array(
+    'access arguments' => array('administer site configuration'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('morphsearch_admin_settings'),
+    'title' => 'Morphsearch module',
+    'description' => 'Dynamically creates a search block in the right sidebar (fulltext search, dynamical content type search, morphological search by taxonomy terms, publication search).',
+  );
+
+  // AJAX request to save search.
+  $items['user/savesearch/ajax'] = array(
+    'type' => MENU_CALLBACK,
+    'page callback' => 'save_search',
+    'access callback' => 'user_is_logged_in',
+  );
+
+  // AJAX request to delete search.
+  $items['user/deletesearch/ajax'] = array(
+      'type' => MENU_CALLBACK,
+      'page callback' => 'delete_search',
+      'access callback' => 'user_is_logged_in',
+  );
+
+  return $items;
+}
+
+/**
+ * Menu callback to configure module settings.
+ * Displays all available content types as checkboxes and saves the admins's selection as a variable 'morphsearch_typesearch_types'.
+ *
+ * @param $form
+ *  An associative array containing the structure of the form.
+ * @param $form_state
+ *  A keyed array containing the current state of the form.
+ *
+ * @return
+ *   The form structure.
+ */
+function morphsearch_admin_settings($form, &$form_state) {
+  $allContentTypes = node_type_get_names();
+
+  $form['typesearch'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Search by content type'),
+    '#description' => 'You can select which content types should be displayed in the search block\'s type search section.'
+  );
+
+  $form['typesearch']['morphsearch_typesearch_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Content types to search for'),
+    '#default_value' => variable_get('morphsearch_typesearch_types', array()),
+    '#options' => $allContentTypes,
+    '#description' => t('Select all content types which should be added to the content type search section.'),
+  );
+
+  return system_settings_form($form);
+}
+
+/**
+ * Function to delete the saved search data from the database.
+ *
+ * @return string (json) containing the deleted search of the user.
+ */
+function delete_search() {
+  global $user;
+  $id = $_POST['savedSearchId'];
+
+  $id_deleted = db_delete('morphsearch_saved_input')
+      -> condition('id', $id)
+      -> condition('user_id', $user->uid)
+      -> execute();
+
+  return drupal_json_output($id);
+}
+
+
+/**
+ * Save search data from JS AJAX request to database.
+ *
+ * @return string (json) containing the save result and result message for the user.
+ */
+function save_search() {
+  global $user;
+  $data = $_POST['saveData'];
+  $url = $_POST['saveUrl'];
+  $uid = $user->uid;
+
+  // don't save duplicate search
+  if (is_duplicate_search($uid, $data)) {
+    $output = array('success' => 'false', 'message' => t('Search has already been saved.'));
+    return drupal_json_output($output);
+
+  } else {
+    try {
+      $id = db_insert('morphsearch_saved_input')
+        ->fields(array(
+          'user_id' => $uid,
+          'input' => $data,
+          'url' => $url,
+        ))
+        ->execute();
+
+      $output = array('success' => 'true', 'message' => t('Search has been saved.'));
+      return drupal_json_output($output);
+
+    } catch (Exception $e) {
+      $output = array('success' => 'false', 'message' => t('Search has not been saved.'));
+      return drupal_json_output($output);
+    }
+  }
+}
+
+/**
+ * Checks if the same search is already in the database.
+ *
+ * @param int $uid The ID of the user.
+ * @param string $data The search parameter array (in json format) to be saved.
+ * @return bool TRUE if user already saved the an identical search, FALSE otherwise.
+ */
+function is_duplicate_search($uid, $data) {
+  $isDuplicate = FALSE;
+
+  $query = "SELECT id FROM {morphsearch_saved_input}
+            WHERE user_id = :uid AND input = :input;";
+  $result = db_query($query, array(":uid" => $uid, ":input" => $data));
+
+  // the entry is a duplicate if there are results
+  if ($result->rowCount() > 0) {
+    $isDuplicate = TRUE;
+  }
+
+  return $isDuplicate;
+}
+
+/**
+ * Implements hook_user_view_alter().
+ * Displays the current user's saved searches on his own user profile page.
+ *
+ * @param array $build A renderable array representing the user.
+ */
+function morphsearch_user_view_alter(&$build) {
+  global $user;
+
+  // display saved searches only on the user's own profile page
+  if ($build['#account']->uid === $user->uid) {
+    $build['savedsearchhtml'] = array(
+      '#markup' => saved_search_html(),
+      '#weight' => '10'
+    );
+  }
+}
+
+/**
+ * Builds the html code of the saved searches to be displayed on the user profile page.
+ *
+ * @return string The html code of the saved searches.
+ */
+function saved_search_html() {
+  global $user;
+  $uid = $user->uid;
+
+  $query = "SELECT id, timestamp, input, url FROM {morphsearch_saved_input}
+            WHERE user_id = :uid
+            ORDER BY timestamp DESC;";
+  $result = db_query($query, array(":uid" => $uid));
+  $result = $result->fetchAll();
+
+  /* Dummy for saved Search. */
+  $html = "<h3>" . t("Saved Searches") . "</h3>";
+  foreach ($result as $currentresult) {
+
+    // JSON representation of the saved search
+    $json = drupal_json_decode($currentresult->input);
+
+    $html .= "<fieldset id='" . $currentresult->id . "'>";
+    /* Format date to fit the mockup. */
+    $html .= "<legend>" . t("Search of") . " " . $new_date = date('d.m.Y', strtotime($currentresult->timestamp)) . "</legend>";
+    $html .= "<table class='searchResultTable'>";
+
+    $hasContent = FALSE;
+
+    // saved fulltext search
+    $fulltext = $json['fulltext'];
+    if (!empty($fulltext)) {
+      if ($fulltext !== '*') {
+        $hasContent = TRUE;
+        $html .= get_html_table_row(t("Fulltext Search") . ":", htmlspecialchars(urldecode($fulltext)));
+      }
+    }
+
+    // saved type search
+    $type = $json['type'];
+    if (!empty($type)) {
+      $humanReadableType = get_search_type_string($type);
+      if (!empty($humanReadableType)) {
+        $hasContent = TRUE;
+        $html .= get_html_table_row(t("Content Type") . ":", $humanReadableType);
+      }
+    }
+
+    // saved morphological search
+    $morph = $json['morphological'];
+    if (!empty($morph)) {
+      $hasContent = TRUE;
+      $vocabulary = []; // array of vocabulary machine names and associated taxonomy term names
+
+      // get taxonomy term names and assign them to their parent vocabulary terms
+      foreach ($morph as $tid) {
+        $term = taxonomy_term_load($tid);
+        $vocabulary[$term->vocabulary_machine_name][] = $term->name;
+      }
+
+      // create one row for each morphological feature and all it's values
+      foreach ($vocabulary as $voc => $terms) {
+        $vocName = taxonomy_vocabulary_machine_name_load($voc)->name;
+        $termNames = implode(", ", $terms);
+
+        $html .= get_html_table_row($vocName . ":", $termNames);
+      }
+    }
+
+    // saved publication search
+    $pub = $json['publication'];
+
+    // static publication filter array key:data-type value:headline
+    // TODO has to be extended if more types are added
+    $pubFilter = ['year' => t('Year of Publication'), 'author' => t('Author'), 'tags' => t('Keywords'),
+        'publisher' => t('Publisher'), 'location' => t('Location'), 'type' => t('Type of Publication')];
+
+    foreach ($pubFilter as $type => $headline) {
+      if (!empty($pub[$type])) {
+        $hasContent = TRUE;
+
+        $result = [];
+        switch ($type) {
+          case 'author':
+            $query = "SELECT c.name FROM {biblio_contributor_data} c
+                      WHERE cid IN (:cid)";
+            $result = db_query($query, array(":cid" => $pub[$type]));
+            $result = $result->fetchAll();
+
+            // map array of objects to array of author names
+            $result = array_map(function($array) {
+              return $array->name; }, $result);
+            break;
+
+          case 'tags':
+            $query = "SELECT k.word FROM {biblio_keyword_data} k
+                      WHERE kid IN (:kid)";
+            $result = db_query($query, array(":kid" => $pub[$type]));
+            $result = $result->fetchAll();
+
+            // map array of objects to array of author names
+            $result = array_map(function($array) {
+              return $array->word; }, $result);
+            break;
+
+          case 'type':
+            $query = "SELECT t.name FROM {biblio_types} t
+                      WHERE tid IN (:tid)";
+            $result = db_query($query, array(":tid" => $pub[$type]));
+            $result = $result->fetchAll();
+
+            // map array of objects to array of author names
+            $result = array_map(function($array) {
+              return $array->name; }, $result);
+            break;
+          default:
+            $result = $pub[$type];
+        }
+
+        // add html row
+        $html .= get_html_table_row($headline . ":", implode(", ", $result));
+      }
+    }
+
+    if (!$hasContent) {
+      $html .= "<tr>";
+      $html .= "<td>" . t("No search filters were set.") . "</td>";
+      $html .= "</tr>";
+    }
+
+    $html .= "</table>";
+    $html .= "<a class='toggleFilter'>" . t("Display all filters") . "</a>";
+    $html .= "<div class='actions' id='" . $currentresult->id . "'>
+                <a href='$currentresult->url' data-input='$currentresult->input' class='searchResultLink'" . ">>> " . t('Show Search Results') . "</a>
+                <a class='delete'>" . t('Delete') . "</a>
+                <div class='confirmation' style='display:none;'>
+                  <h4>" . t('Do you really want to delete this search?') . "</h4>
+                  <button class='no'>" . t('No') . "</button>
+                  <button class='yes' onclick='javascript:Indeko.Morphsearch.deleteSavedSearch(" . $currentresult->id . ");'>" . t('Yes') . "</button>
+                </div>
+              </div>";
+    $html .= "";
+    $html .= "</fieldset>";
+  }
+
+  return $html;
+}
+
+/**
+ * Converts features and corresponding values to an HTML table structure.
+ *
+ * @param string $feature First column of table row.
+ * @param string $values Second column of table row.
+ * @return {String} HTML table row.
+ */
+function get_html_table_row($feature, $values) {
+  $html = "<tr>";
+  $html .= "<td class='firstColumn'>" . $feature . "</td>";
+  $html .= "<td>" . $values . "</td>";
+  $html .= "</tr>";
+
+  return $html;
+}
+
+/**
+ * Converts array of node type machine names to a comma separated string of node type names.
+ *
+ * @param array $array The array of node type machine names.
+ * @return String of node type names, separated by comma.
+ */
+function get_search_type_string($array) {
+  $string = '';
+
+  foreach ($array as $machineName) {
+    $string .= t(node_type_get_name(node_type_load($machineName))) . ', ';
+  }
+
+  $string = rtrim($string, ", ");
+
+  return $string;
+}
+
+/**
+ * Returns an array of all available biblio authors.
+ *
+ * @return {Array} author ID -> first and last name
+ */
+function biblio_get_authors() {
+  $query = "SELECT c.cid, c.name FROM {biblio_contributor_data} c";
+  $result = db_query($query);
+
+  return $result->fetchAllKeyed(0,1);
+}
+
+/**
+ * Returns an array of all available biblio keywords.
+ *
+ * @return {Array} keyword ID -> keyword
+ */
+function biblio_get_keywords() {
+  $query = "SELECT k.kid, k.word FROM {biblio_keyword_data} k";
+  $result = db_query($query);
+
+  return $result->fetchAllKeyed(0,1);
+}
+
+/**
+ * Returns an array of all visible (configure in biblio module settings) biblio publication types.
+ *
+ * @return {Array} publication type ID -> publication type name
+ */
+function biblio_get_types() {
+  $query = "SELECT t.tid, t.name FROM {biblio_types} t
+            WHERE t.visible = 1";
+  $result = db_query($query);
+
+  return $result->fetchAllKeyed(0,1);
+}
+
+/**
+ * Returns an array of all distinct years of available publications.
+ *
+ * @return {Array} year -> year
+ */
+function biblio_get_years() {
+  $query = "SELECT DISTINCT b.biblio_year FROM {biblio} b";
+  $result = db_query($query);
+
+  return $result->fetchAllKeyed(0,0);
+}
+
+/**
+ * Returns an array of all distinct publishers of available publications.
+ *
+ * @return {Array} publisher -> publisher
+ */
+function biblio_get_publishers() {
+  $query = "SELECT DISTINCT b.biblio_publisher FROM {biblio} b";
+  $result = db_query($query);
+
+  return $result->fetchAllKeyed(0,0);
+}
+
+/**
+ * Returns an array of all distinct publishers of available publications.
+ *
+ * @return {Array} location -> location
+ */
+function biblio_get_locations() {
+  $query = "SELECT DISTINCT b.biblio_place_published FROM {biblio} b";
+  $result = db_query($query);
+
+  $stringArray = [];
+
+  return $result->fetchAllKeyed(0,0);
+}
+
+
+/**
+ * Returns an array of all taxonomy IDs associated with the given node ID.
+ *
+ * @param int $nid The Node ID.
+ * @return {Array} of taxonomy IDs.
+ */
+function get_taxonomy_ids($nid) {
+  $query = "SELECT tid FROM {taxonomy_index} WHERE nid = :nid";
+  $results = db_query($query, array(':nid' => $nid));
+
+  return $results->fetchCol();
+}
+
+/**
+ * Returns an array of research result node IDs that reference on the given $nid.
+ *
+ * @param int $nid The Node ID.
+ * @param string $field The machine name of the reference field.
+ * @return {Array} of node IDs.
+ */
+function get_associated_search_result_ids($nid, $field) {
+  $query = 'SELECT DISTINCT entity_id AS reference 
+            FROM {field_data_field_' . $field . '} 
+            WHERE field_' . $field . '_target_id = :nid';
+  $results = db_query($query, array(':nid' => $nid));
+
+  return $results->fetchCol();
+}
+
+/**
+ * Implements hook_apachesolr_index_document_build().
+ * Extend the publication document before sending them to Solr to expose additional fields to Solr search.
+ *
+ * (For field type definiton see solr configuration schema.xml; e.g. is_ = integer single-valued, sm_ = string multi-valued)
+ *
+ * @param ApacheSolrDocument $document Array of key / value pairs that represent a Solr Document as it will be sent to the Solr Server.
+ * @param Object $entity Drupal representation of the node and it#s content.
+ */
+function morphsearch_apachesolr_index_document_build_node(ApacheSolrDocument $document, $entity) {
+  if ($entity->type === 'biblio') {
+    // make fields available for field search (is_year: 2015)
+    $document->addField('is_year', $entity->biblio_year);
+    $document->addField('ss_publisher', $entity->biblio_publisher);
+    $document->addField('ss_location', $entity->biblio_place_published);
+    $document->addField('ss_type', $entity->biblio_type_name);
+    $document->addField('ss_doi', $entity->biblio_doi);
+    $document->addField('ss_url', $entity->biblio_url);
+    $document->addField('ss_isbn', $entity->biblio_isbn);
+
+    // add file extension to Solr index
+    if (isset($entity->field_attached_file['und'][0]['filename'])) {
+      $fileExtension = pathinfo($entity->field_attached_file['und'][0]['filename'])['extension'];
+      $document->addField('ss_filetype', $fileExtension);
+    }
+
+
+    // make fields available for fulltext search ts_ (single-valued) and tm_ (multi-valued)
+    $document->addField('ts_year', strtolower($entity->biblio_year));
+    $document->addField('ts_publisher', strtolower($entity->biblio_publisher));
+    $document->addField('ts_location', strtolower($entity->biblio_place_published));
+    $document->addField('ts_type', strtolower($entity->biblio_type_name));
+
+    foreach ($entity->biblio_contributors as $contributor) {
+      if (!empty($contributor['name'])) {
+        $document->addField('tm_author', $contributor['name']);
+      }
+    }
+
+    foreach ($entity->biblio_keywords as $keyword) {
+      if (!empty($keyword)) {
+        $document->addField('sm_tag', $keyword);
+        $document->addField('tm_tag', strtolower($keyword));
+      }
+    }
+
+
+    // add taxonomy IDs of associated research results to publications
+    // (publications can be found by morphological terms of associated research results)
+    $array_tids = array();
+
+    // get IDs of all associated research results
+    $reference_node_ids = get_associated_search_result_ids($entity->nid, 'publication');
+
+    // get all taxonomy IDs of associated research results
+    foreach ($reference_node_ids as $ref) {
+      $array_tids = array_merge($array_tids, get_taxonomy_ids($ref));
+    }
+
+    // add taxonomy IDs to solr document index
+    $array_tids = array_unique($array_tids);
+    $document->setField('tid', $array_tids);
+  }
+
+
+  if ($entity->type === 'wissenskarte') {
+
+    // add image type extension to Solr index
+    $document->addField('ss_filetype', pathinfo($entity->field_wk_bild['und'][0]['filename'])['extension']);
+
+    // add taxonomy ids and names of the entity reference tags field to solr index
+    if (isset($entity->field_tag_combined['und'])) {
+      foreach ($entity->field_tag_combined['und'] as $value) {
+        if (!empty($value)) {
+          $tid = $value['target_id'];
+          $term = taxonomy_term_load($tid);
+          $name = $term->name;
+
+          $document->addField('tid', $tid);
+          $document->addField('tm_vid_knowledgemaptags', $name);
+        }
+      }
+    }
+  }
+
+  // TODO duplicate code
+  // add taxonomy IDs of associated research results to projects
+  // (projects can be found by morphological terms of associated research results)
+  if ($entity->type === 'projekt' and node_type_load('forschungsergebnis') != FALSE) {
+    $array_tids = array();
+
+    // get IDs of all associated research results
+    $reference_node_ids = get_associated_search_result_ids($entity->nid, 'project');
+
+    // get all taxonomy IDs of associated research results
+    foreach ($reference_node_ids as $ref) {
+      $array_tids = array_merge($array_tids, get_taxonomy_ids($ref));
+    }
+
+    // add taxonomy IDs to solr document index
+    $array_tids = array_unique($array_tids);
+    $document->setField('tid', $array_tids);
+  }
+}
+
+/**
+ * Implements hook_apachesolr_query_alter().
+ * Alter the query object and its parameters after it's prepared and cached.
+ * (Use hook_apachesolr_query_prepare if parameters added during this hook should be visible to end users.)
+ * Set Solr eDisMax query handler.
+ *
+ * @param DrupalSolrQueryInterface $query Search query to be sent to the Solr server.
+ */
+function morphsearch_apachesolr_query_alter(DrupalSolrQueryInterface $query) {
+  $query->addParam('defType', 'edismax'); // problem with wildcards in the solr version we are using?
+  /* Same behaviour for all query handlers. Solr does not support wildcards as the first element (or comes with heavy
+  performace loss if enabled) */
+
+  //$query->addParam('defType', 'dismax');
+  /*$query->replaceParam('q.op', 'AND');
+  $query->addParam('q.alt', '*:*');
+  $query->addParam('fl', '*');
+  $query->removeParam('mm');*/
+}
+
+
+/**
+ * Provides an empty template to store search parameters. The associative array
+ * represents the available search parameter structure of the morphsearch block.
+ *
+ * @return array
+ *   Associative array of available search parameters.
+ */
+function morphsearch_get_search_template() {
+  $searchArray = array(
+    'fulltext' => '',
+    'morphological' => array(),
+    'type' => array(),
+    'publication' => array(
+      'year' => array(),
+      'author' => array(),
+      'tags' => array(),
+      'publisher' => array(),
+      'location' => array(),
+      'type' => array(),
+    ),
+  );
+
+  return $searchArray;
+}
+
+
+/**
+ * Implements hook_help().
+ * Display help link to README.txt in module overview (admin/modules).
+ */
+function morphsearch_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#morphsearch':
+      $readme = file_get_contents(drupal_get_path('module', 'morphsearch') . '/README.txt');
+      return module_exists('markdown') ? filter_xss_admin(module_invoke('markdown', 'filter', 'process', 0, -1, $readme)) : '<pre>' . check_plain($readme) . '</pre>';
+  }
+}

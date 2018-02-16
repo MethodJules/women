@@ -1,0 +1,4 @@
+name = indekonews_conversion
+description = Faengt Buttonklicks von Benutzern im Newsletter ab und verwaltet diese
+core = 7.x
+dependencies[] = indekonews

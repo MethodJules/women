@@ -1,0 +1,139 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: hofer
+ * Date: 10.07.2017
+ * Time: 09:31
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function bi_visual_menu()
+{
+    $items['d3/bi_visual/%'] = array(
+        'title' => '',
+        'description' => 'Different visualization.',
+        'page callback' => 'bi_visual',
+        'access callback' => TRUE,
+	'page arguments' => array(2),
+    );
+
+  $items['d3/bi/%'] = array(
+    'title' => '',
+    'description' => 'Different visualization.',
+    'page callback' => 'bi_drilldown',
+    'access callback' => TRUE,
+    'page arguments' => array(2),
+  );
+
+return $items;
+}
+
+
+
+
+function bi_visual($type) {
+	//$type = "Disziplinen";    
+	module_load_include('inc','bi_visual','query_research_results');
+	$result = query_research_results($type);
+	//dsm($result->fetchAll());
+	$data = array();
+		foreach($result as $line) {
+		//	dsm($line->Anzahl);
+		//dsm($line->count.terms(name));
+		array_push($data, array($line->name, $line->Anzahl));
+	}
+	//dsm($data);
+
+	//build table
+  $tableHeader = array(
+    'name' => t('Name'),
+    'count' => t('Count'),
+  );
+
+  $tableRows = array(
+  );
+
+  foreach ($data as $entry) {
+    $rowArray = array();
+    $rowArray['name'] = "<a href=../bi/" . array_values($entry)[0] . "/>" . array_values($entry)[0] ;
+    $rowArray['count'] = array_values($entry)[1];
+    array_push($tableRows, $rowArray);
+  }
+
+	$chart = array(
+		'id' => 'visualization',
+		'type' => 'piechart',
+		'rows' => $data,
+	);
+
+  $type_of_visualization = array(
+    '#theme' => 'item_list',
+    '#title' => 'Analysen',
+    '#items' => array(
+      '<a href="./disziplinen">Disziplinen</a>',
+      '<a href="./ergebnistyp">Forschungsergebnisse</a>',
+      '<a href="./branchen">Branchen</a>',
+
+    ),
+  );
+
+
+
+  $form['reports'] = array(
+    '#title' => t('Crust Size'),
+    '#type' => 'select',
+    '#description' => 'Select the desired pizza crust size.',
+    '#options' => array(t('--- SELECT ---'), t('10"'), t('12"'), t('16"')),
+  );
+
+	$output = render($type_of_visualization) .  d3_draw($chart) ;
+
+	//$result = bi_visual_drilldown();
+	dsm($result->fetchAll());
+  $output .= theme('table', array('header' => $tableHeader, 'rows' => $tableRows));
+	return $output;
+}
+
+function bi_drilldown($argument) {
+  $sql_query = "SELECT title FROM ({node} INNER JOIN {taxonomy_index} ON node.nid = taxonomy_index.nid)
+                INNER JOIN {taxonomy_term_data} ON taxonomy_index.tid = taxonomy_term_data.tid
+                WHERE name = '". $argument ."' AND type = 'forschungsergebnis'";
+  $result = db_query($sql_query);
+  $result = $result->fetchAll();
+  dsm($result);
+
+  $data = array();
+  foreach($result as $line) {
+
+    array_push($data, array($line->title, 1));
+  }
+
+  $tableHeader = array(
+    'name' => t('Name'),
+    'count' => t('Count'),
+  );
+
+  $tableRows = array(
+  );
+
+  foreach ($data as $entry) {
+    $rowArray = array();
+    $rowArray['name'] = array_values($entry)[0] ;
+    $rowArray['count'] = array_values($entry)[1];
+    array_push($tableRows, $rowArray);
+  }
+
+  $chart = array(
+    'id' => 'visualization',
+    'type' => 'piechart',
+    'rows' => $data,
+  );
+
+  $output = d3_draw($chart) ;
+  return $output;
+}
+
+

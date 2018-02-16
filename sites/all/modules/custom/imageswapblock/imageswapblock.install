@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file imageswap.install
+ * Contains uninstall functions for the Image Swap Block module.
+ */
+
+
+/**
+ * Implements hook_uninstall().
+ */
+function imageswapblock_uninstall() {
+  variable_del('isb_interval');
+  variable_del('isb_imagefolder');
+  variable_del('isb_imagefids');
+}
