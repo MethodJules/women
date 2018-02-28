@@ -1,0 +1,20 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: julien
+ * Date: 17.02.18
+ * Time: 18:38
+ */
+
+
+function node_relation_menu() {
+    $items['node_relation'] = array(
+        'title' => 'Node Visualization',
+        'description' => 'Visualizing Nodes',
+        'page callback' => 'node_relation_visualize',
+        'access callback' => TRUE,
+        'file' => 'node_relation_visualize.inc',
+    );
+
+    return $items;
+}

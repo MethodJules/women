@@ -1,0 +1,4 @@
+name = Node Relation Visualize
+description = The module visualizes nodes and their references
+core = 7.x
+files[] = node_relation_visualize.inc
