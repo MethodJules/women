@@ -46,6 +46,7 @@ function network_get_nodes($nodes){
     foreach ($network_nodes as $node) {
         $network_node = array(
             'name' => $node,
+            'title'  => node_load($node)->title,
             //'img' => 'https://github.com/favicon.ico',
         );
         array_push($nodes, $network_node);

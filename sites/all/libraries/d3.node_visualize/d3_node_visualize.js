@@ -20,7 +20,7 @@
     Drupal.d3.node_visualize = function (select, settings) {
         // Your custom JS.
 
-        var w = 500;
+        var w = 1000;
         var h = 600;
         var linkDistance=200;
         div = (settings.id) ? settings.id : 'visualization';
@@ -84,7 +84,7 @@
                 "class":"nodelabel",
                 'font-size':12,
                 "stroke":"black"})
-            .text(function(d){return d.name;});
+            .text(function(d){return d.title;});
 
         var edgepaths = svg.selectAll(".edgepath")
             .data(dataset.edges)
