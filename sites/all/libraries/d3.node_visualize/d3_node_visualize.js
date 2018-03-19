@@ -64,16 +64,20 @@
             .style("stroke-width", "1px");
 
 
-        var nodes = svg.selectAll("circle")
+        var nodes = svg.selectAll(".node")
             .data(dataset.nodes)
             .enter()
-            .append("circle")
-            .attr({"r":15})
-            //.style("fill",function(d,i){return colors(i);})
-            .style("fill","green")
-            .call(force.drag)
-            .on('dblclick', connectedNodes)
-            .on('mouseover', handleMouseOver);
+            .append("image")
+            .attr("class", "node")
+            .attr("xlink:href", function (d) {return d.img})
+            .attr("x", -32)
+            .attr("y", -32)
+            .attr("width", 64)
+            .attr("height", 64)
+            .on("mouseover", handleMouseOver);
+
+
+
 
         var nodelabels = svg.selectAll(".nodelabel")
             .data(dataset.nodes)
@@ -84,7 +88,10 @@
                 "class":"nodelabel",
                 'font-size':12,
                 "stroke":"black"})
-            .text(function(d){return d.title;});
+            .html(function(d){return "<a href='node/" + d.name + "'>" + d.title + "</a>";});
+
+            //.attr("xlink:href", function(d){return d.name;});
+            //.html("<h1>First</h1>");
 
         var edgepaths = svg.selectAll(".edgepath")
             .data(dataset.edges)
@@ -137,11 +144,14 @@
                 "y2": function(d){return d.target.y;}
             });
 
-            nodes.attr({"cx":function(d){return d.x;},
-                "cy":function(d){return d.y;}
-            });
+            nodes.attr("transform", function(d){return "translate(" + d.x + "," + d.y + ")";});
 
-            nodelabels.attr("x", function(d) { return d.x; })
+
+
+
+
+
+            nodelabels.attr("x", function(d) { return d.x + 35; })
                 .attr("y", function(d) { return d.y; });
 
             edgepaths.attr('d', function(d) { var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y;
@@ -211,13 +221,12 @@
     }
 
     function handleMouseOver(d,i) {
-        //alert(i);
-        // $.ajax({
-        //     url: 'netzwerk/calc/100',
-        //     success: function (data) {
-        //         $('#block-network-network').html('<h2>Juhuuh</h2>' + data);
-        //     }
-        // });
+        //alert(d.name);
+        console.log(d.name);
+
+
+
+
     }
 
 

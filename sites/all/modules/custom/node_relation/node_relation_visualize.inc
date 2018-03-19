@@ -12,7 +12,7 @@ function node_relation_visualize() {
 
     $data = node_relation_create();
     //dsm("HAllo");
-    dsm($data);
+    //dsm($data);
 
     return network_draw($data);
 }
@@ -44,17 +44,38 @@ function network_get_nodes($nodes){
     $network_nodes = network_get_all_nodes($nodes);
     $nodes = array();
     foreach ($network_nodes as $node) {
+        $drupal_node = node_load($node);
+        $items = field_get_items('node', $drupal_node, 'field_image');
+        $url = image_style_url('circle_images', $items[0]['uri']);
+
+        if(strpos($url, '.png') or strpos($url, '.jpg') ) {
+            $url = $url;
+        } else {
+            $url = 'https://github.com/favicon.ico';
+        }
+        /*
+        if(strpos($url, '.png'or '.jpg') == false) {
+            $url = 'https://github.com/favicon.ico';
+        }
+        */
         $network_node = array(
             'name' => $node,
             'title'  => node_load($node)->title,
+            'img' => $url,
             //'img' => 'https://github.com/favicon.ico',
+
+
         );
+
+
+        //dsm($url);
         array_push($nodes, $network_node);
     }
 
     $network_nodes = array(
         'nodes' => $nodes,
     );
+    //dsm($network_nodes);
     return $network_nodes;
 }
 
