@@ -45,7 +45,7 @@ function network_get_nodes($nodes){
     $nodes = array();
     foreach ($network_nodes as $node) {
         $drupal_node = node_load($node);
-        $items = field_get_items('node', $drupal_node, 'field_image');
+        $items = field_get_items('node', $drupal_node, 'field_person_bild');
         $url = image_style_url('circle_images', $items[0]['uri']);
 
         if(strpos($url, '.png') or strpos($url, '.jpg') ) {
