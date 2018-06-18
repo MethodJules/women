@@ -1,0 +1,1 @@
+window.CKEDITOR_BASEPATH = '/women/sites/all/libraries/ckeditor/';
