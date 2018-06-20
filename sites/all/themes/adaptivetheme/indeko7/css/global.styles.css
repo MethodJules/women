@@ -34,6 +34,11 @@
   list-style-type: none;
 }
 
+.breadcrumb {
+    padding-top: 100px ;
+    padding-bottom: -50px;
+}
+
 @font-face{
 	font-family:'MyWebFont';
 		src: url('firalight.woff2') format('woff2');
