@@ -45,11 +45,13 @@ function network_get_nodes($nodes){
     $nodes = array();
     foreach ($network_nodes as $node) {
         $drupal_node = node_load($node);
-        $items = field_get_items('node', $drupal_node, 'field_person_bild');
-        $url = image_style_url('circle_images', $items[0]['uri']);
-
+        //$items = field_get_items('node', $drupal_node, 'field_person_bild');
+        //dsm($items);
+        //$url = image_style_url('circle_images', $items[0]['uri']);
+        $url = 'public://person_default.png';
         if(strpos($url, '.png') or strpos($url, '.jpg') ) {
-            $url = $url;
+            //$url = $url;
+            $url = 'https://github.com/favicon.ico';
         } else {
             $url = 'https://github.com/favicon.ico';
         }
