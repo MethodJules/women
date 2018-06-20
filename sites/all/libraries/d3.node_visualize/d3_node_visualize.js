@@ -67,14 +67,18 @@
         var nodes = svg.selectAll(".node")
             .data(dataset.nodes)
             .enter()
-            .append("image")
+            //.append("image")
+            .append("circle")
             .attr("class", "node")
-            .attr("xlink:href", function (d) {return d.img})
-            .attr("x", -32)
-            .attr("y", -32)
-            .attr("width", 64)
-            .attr("height", 64)
-            .on("mouseover", handleMouseOver);
+            //.attr("xlink:href", function (d) {return d.img})
+            .attr("r",8)
+            //.attr("x", -32)
+            //.attr("y", -32)
+            //.attr("width", 64)
+            //.attr("height", 64)
+            .style("fill", "blue")
+            .on("mouseover", handleMouseOver)
+            .call(force.drag);
 
 
 
