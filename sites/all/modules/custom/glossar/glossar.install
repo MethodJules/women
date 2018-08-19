@@ -1,0 +1,49 @@
+<?php
+/**
+* Implements hook_install().
+*/
+
+function glossar_install()
+{
+    $t = get_t();
+
+    $glossar = 'glossar';
+
+    //node tye definition
+    $glossar = array(
+    'type' => $glossar,
+    'name' => $t('Glossar'),
+    'base' => 'node_content',
+    'title_label' => $t('Title'),
+    'description' => $t('Title of the glossary term'),
+    'custom' => TRUE,
+    );
+
+    $content_type = node_type_set_defaults($glossar);
+
+    //add body field
+    node_add_body_field($content_type, $t('Description of the term'));
+
+    //save the content type
+    node_type_save($content_type);
+
+}
+
+function glossar_uninstall()
+{
+    node_type_delete('glossar');
+    variable_del('node_preview_glossar');
+    node_types_rebuild();
+    menu_rebuild();
+
+}
+
+function glossar_update_7000()
+{
+    $node_options = variable_get('node_options_glossar', array());
+    $promote_key = array_search('promote', $node_options);
+    if($promote_key !== false) {
+        unset($node_options[$promote_key]);
+        variable_set('node_options_glossar', $node_options);
+    }
+}
