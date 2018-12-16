@@ -7,7 +7,7 @@
  */
 
 function view_persons_on_activity_node_node_view_alter(&$build) {
-
+	global $base_url;
     //dsm($build);
 
     if ($node = menu_get_object()) {
@@ -22,9 +22,9 @@ function view_persons_on_activity_node_node_view_alter(&$build) {
 
 
         foreach ($persons_entity_ids as $persons_entity_id) {
-            $links[] = "<a href='" . $persons_entity_id . "'>" . node_load($persons_entity_id)->title . "</a>"  ;
+            $links[] = "<a href='". $base_url . "/node/" . $persons_entity_id . "'>" . node_load($persons_entity_id)->title . "</a>"  ;
         }
-        dsm($links);
+        //dsm($links);
 
         $associated_persons = array(
             '#theme' => 'item_list',

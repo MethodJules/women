@@ -222,7 +222,7 @@ $databases = array (
     array (
       'database' => 'women',
       'username' => 'root',
-      'password' => '',
+      'password' => 'indeko.2017',
       'host' => 'localhost',
       'port' => '',
       'driver' => 'mysql',
