@@ -14,8 +14,8 @@
       $(settings.leaflet).each(function () {
         // skip to the next iteration if the map already exists
         var container = L.DomUtil.get(this.mapId);
-        if (!container || container._leaflet) {
-          return false;
+        if (!container || container._leaflet_id) {
+          return;
         }
 
         // load a settings object with all of our map settings
@@ -34,25 +34,24 @@
         for (var key in this.map.layers) {
           var layer = this.map.layers[key];
           var map_layer = Drupal.leaflet.create_layer(layer, key);
+          //layers[key] = map_layer;
 
-          layers[key] = map_layer;
-
-          // keep the reference of first layer
-          // Distinguish between "base layers" and "overlays", fallback to "base"
-          // in case "layer_type" has not been defined in hook_leaflet_map_info()
+          // Distinguish between "base layers" and "overlays".
+          // Fall back to "base" in case "layer_type" has not been defined in
+          // hook_leaflet_map_info()
           layer.layer_type = (typeof layer.layer_type === 'undefined') ? 'base' : layer.layer_type;
-          // as written in the doc (http://leafletjs.com/examples/layers-control.html)
-          // Always add overlays layers when instantiate, and keep track of
-          // them for Control.Layers.
-          // Only add the very first "base layer" when instantiating the map
-          // if we have map controls enabled
+          // As stated in http://leafletjs.com/examples/layers-control,
+          // when using multiple base layers, only one of them should be added
+          // to the map at instantiation, but all of them should be present in
+          // the base layers object when creating the layers control.
+          // See statement L.control.layers(layers, overlays) much further below.
           switch (layer.layer_type) {
             case 'overlay':
-              lMap.addLayer(map_layer);
+              //lMap.addLayer(map_layer);
               overlays[key] = map_layer;
               break;
             default:
-              if (i === 0 || !this.map.settings.layerControl) {
+              if (i === 0 /*|| !this.map.settings.layerControl*/) {
                 lMap.addLayer(map_layer);
                 i++;
               }
@@ -61,7 +60,7 @@
           }
           i++;
         }
-        // We loop through the layers once they have all been created to connect them to their switchlayer if necessary.
+
         var switchEnable = false;
         for (var key in layers) {
           if (layers[key].options.switchLayer) {
@@ -120,7 +119,9 @@
         for (i = 0; i < this.features.length; i++) {
           var feature = this.features[i];
          
-          var cluster = (feature.type === 'point') && (!feature.flags || !(feature.flags & LEAFLET_MARKERCLUSTER_EXCLUDE_FROM_CLUSTER));
+          var cluster = (feature.type === 'point' || feature.type === 'json') &&
+            (!feature.flags || !(feature.flags & LEAFLET_MARKERCLUSTER_EXCLUDE_FROM_CLUSTER));
+
           if (cluster) {
             var clusterGroup = feature.clusterGroup ? feature.clusterGroup : 'global';
             if (!clusterLayers[clusterGroup]) {
@@ -174,7 +175,7 @@
 
         // add layer switcher
         if (this.map.settings.layerControl) {
-          lMap.addControl(new L.Control.Layers(layers, overlays));
+          L.control.layers(layers, overlays).addTo(lMap);
         }
 
         // center the map
@@ -223,8 +224,10 @@
           case 'polygon':
             lFeature = Drupal.leaflet.create_polygon(feature, lMap);
             break;
-          case 'multipolygon':
           case 'multipolyline':
+            feature.multipolyline = true;
+            // no break;
+          case 'multipolygon':
             lFeature = Drupal.leaflet.create_multipoly(feature, lMap);
             break;
           case 'json':
@@ -235,6 +238,12 @@
             break;
           case 'circle':
             lFeature = Drupal.leaflet.create_circle(feature, lMap);
+            break;
+          case 'circlemarker':
+            lFeature = Drupal.leaflet.create_circlemarker(feature, lMap);
+            break;
+          case 'rectangle':
+            lFeature = Drupal.leaflet.create_rectangle(feature, lMap);
             break;
         }
 
@@ -253,9 +262,9 @@
         return lFeature;
       }
 
-      if (console) {
-        //var renderTime = (new Date()).getTime() - start;
-        //console.log('leaflet_markercluster.drupal.js render time: ' + renderTime/1000 + ' s');
+      if (window.console && window.console.log) { // Does not work on IE8
+        var renderTime = (new Date()).getTime() - start;
+        window.console.log('leaflet_markercluster.drupal.js render time: ' + renderTime/1000 + ' s');
       }
     }
   };

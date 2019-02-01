@@ -4,15 +4,16 @@ INSTALLATION
 Naturally you need to have Leaflet (the module and the javascript library)
 installed before you can use Leaflet MarkerCluster.
 
-Then download the MarkerCluster library from:
-https://github.com/danzel/Leaflet.markercluster
+With Leaflet in place, download the MarkerCluster javascript library from
+https://github.com/Leaflet/Leaflet.markercluster/archive/v1.0.0.zip
 Rename the downloaded directory to leaflet_markercluster (lowercase), so that
-the path to the essential javascript file becomes
+the path to the essential javascript file inside this folder becomes:
 sites/all/libraries/leaflet_markercluster/dist/leaflet.markercluster.js
 
 Visit the Status Report page, admin/reports/status, to check all's ok.
 
 There are no permissions to configure.
+
 This module does not itself have a UI to set MarkerCluster configuration
 parameters. However parameters may be set through Drupal code as part of the
 creation of the map and will thus be passed to the underlying javascript
@@ -41,16 +42,17 @@ The following MarkerCluster parameters may be configured this way:
   animateAddingMarkers (default: FALSE)
   disableClusteringAtZoom (NULL)
   maxClusterRadius (80)
+  removeOutsideVisibleBounds (TRUE)
   showCoverageOnHover (TRUE)
   singleMarkerMode (FALSE)
   skipDuplicateAddTesting (FALSE)
+  spiderfyDistanceMultiplier (1.0)
   spiderfyOnMaxZoom (TRUE)
   zoomToBoundsOnClick (TRUE)
-  addRegionToolTips (FALSE)
 
 See the bottom reference for an explanation of these parameters.
 
 References:
 
-o http://leaflet.cloudmade.com/2012/08/20/guest-post-markerclusterer-0-1-released.html
+o http://leafletjs.com/2012/08/20/guest-post-markerclusterer-0-1-released.html
 o https://github.com/Leaflet/Leaflet.markercluster/blob/master/README.md

@@ -1,0 +1,22 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: julien
+ * Date: 21.01.19
+ * Time: 13:15
+ */
+
+/**
+ * Implements hooK_node_view_alter()
+ */
+
+function view_persons_on_sw_education_node_node_view_alter(&$build) {
+    global $base_url;
+    //dsm($build);
+
+    if ($node = menu_get_object()) {
+        $nid = $node->nid;
+    }   else {
+        $nid = -1;
+    }
+}

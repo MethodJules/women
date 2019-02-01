@@ -58,14 +58,6 @@ function d3_examples_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
-    $items['d3/examples/gantt'] = array(
-        'title' => 'Gantt Chart',
-        'description' => 'Uses d3 module to create a sample gantt chart.',
-        'access callback' => TRUE,
-        'page callback' => 'd3_examples_gantt',
-        'type' => MENU_LOCAL_TASK,
-    );
-
   return $items;
 }
 
@@ -75,7 +67,7 @@ function d3_examples_menu() {
 function d3_examples_linegraph() {
 
   $chart = array(
-    'id' => 'visualization2',
+    'id' => 'visualization',
     'type' => 'linegraph',
     'legend' => array(
       'Development',
@@ -84,11 +76,11 @@ function d3_examples_linegraph() {
       'Design',
     ),
     'rows' => array(
-      array('1st Quarter 2011',10,20,26,35),
-      array('2nd Quarter 2011',20,26,27,37),
-      array('3rd Quarter 2011',10,50,28,50),
-      array('4th Quarter 2011',15,76,49,51),
-      array('1st Quarter 2012',20,100,50,52),
+      array('1st Quarter 2011', 10, 20, 26, 35),
+      array('2nd Quarter 2011', 20, 26, 27, 37),
+      array('3rd Quarter 2011', 10, 50, 28, 50),
+      array('4th Quarter 2011', 15, 76, 49, 51),
+      array('1st Quarter 2012', 20, 100, 50, 52),
     ),
   );
 
@@ -102,7 +94,7 @@ function d3_examples_forcedirected() {
 
   $graph = graphapi_new_graph();
 
-  graphapi_add_link($graph, "RAKOON", "relation");
+  graphapi_add_link($graph, "graphapi_relation", "relation");
   graphapi_add_link($graph, "graphapi_relation", "graphapi");
   graphapi_add_link($graph, "graphapi", "views");
   graphapi_add_link($graph, "php", "graphapi");
@@ -137,12 +129,12 @@ function d3_examples_column() {
       'Design',
     ),
     'rows' => array(
-      array('1st Quarter 2011',10,20,26,35),
-      array('2nd Quarter 2011',20,26,27,37),
-      array('3rd Quarter 2011',10,50,28,50),
-      array('4th Quarter 2011',15,76,49,51),
-      array('1st Quarter 2012',20,100,50,52),
-      array('2nd Quarter 2012',4,1,110,40),
+      array('1st Quarter 2011', 10, 20, 26, 35),
+      array('2nd Quarter 2011', 20, 26, 27, 37),
+      array('3rd Quarter 2011', 10, 50, 28, 50),
+      array('4th Quarter 2011', 15, 76, 49, 51),
+      array('1st Quarter 2012', 20, 100, 50, 52),
+      array('2nd Quarter 2012', 4, 1, 110, 40),
     ),
   );
 
@@ -151,6 +143,7 @@ function d3_examples_column() {
 
 /**
  * Generates a random example bar graph.
+ *
  * @return string
  *   HTML for the page content.
  */
@@ -192,73 +185,15 @@ function d3_examples_bar() {
  *   HTML for the page.
  */
 function d3_examples_pie() {
-
-  $data = array(
-    array('Terminologie', 18),
-    array('Modell', 39),
-    array('Methode', 75),
-    array('Implementierung', 45),
-    array('Empirische Untersuchung', 21),
-    array('Theorie', 20),
-    array('Sonstiges', 2),
-  );
-
-  $tableHeader = array(
-    'name' => t('Name'),
-    'anzahl' => t('Anzahl'),
-  );
-  $tableRows = array();
-
-  foreach ($data as $entry) {
-    $rowArray = array();
-
-    $rowArray['name'] = array_values($entry)[0];
-    $rowArray['anzahl'] = array_values($entry)[1];
-
-    array_push($tableRows, $rowArray);
-  }
-
   $chart = array(
     'id' => 'visualization',
     'type' => 'piechart',
-    'rows' => $data,
-
+    'rows' => array(
+      array('Development', 500),
+      array('Strategy', 50),
+      array('Design', 100),
+      array('QA', 160),
+    ),
   );
-
-  $output = d3_draw($chart);
-  $output .= theme('table', array('header' => $tableHeader, 'rows' => $tableRows));
-
-  return $output;
+  return d3_draw($chart);
 }
-
-function d3_examples_gantt() {
-    //Get data
-    //dsm("Hello");
-    $result = db_query("SELECT title AS task, field_anfangsdatum_value AS startTime, field_enddatum_value  AS endTime, title AS 'type', 'DetailsPlaceholder' AS details FROM indeko_dev.field_data_field_anfangsdatum AS startdatum INNER JOIN 
-indeko_dev.field_data_field_enddatum AS ende ON startdatum.entity_id = ende.entity_id
-INNER JOIN indeko_dev.node ON ende.entity_id = indeko_dev.node.nid;  ");
-    //dsm($result);
-    //dsm(drupal_json_encode($result));
-    $record = $result->fetchAll();
-
-    //array_walk($record, function(&$value, $key){$value .= "huhuhuhu";});
-    //dsm($record);
-    //dsm($record);
-    //$record = drupal_json_encode($record);
-    //foreach ($result as $r){
-    //    dsm($r->field_anfangsdatum_value);
-    //}
-    $chart = array(
-        'id' => 'visualization',
-        'type' => 'gantt',
-        'data' => $record,
-    );
-
-    return d3_draw($chart);
-
-
-    //return d3_draw function
-
-
-}
-

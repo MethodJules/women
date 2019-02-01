@@ -1,0 +1,4 @@
+name = View Persons On SW Education Node
+description = Views persons for SW Education
+core = 7.x
+package = Jigsaw

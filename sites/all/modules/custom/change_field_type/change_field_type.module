@@ -5,3 +5,20 @@
  * Date: 31.01.19
  * Time: 22:09
  */
+
+
+/**
+ * Implements hook_menu().
+ */
+function change_field_type_menu()
+{
+    $items['change/fieldtype'] = array(
+        'title' => 'Change',
+        'page callback' => 'change_description_field',
+        'access callback' => TRUE,
+        'file' => 'change_field_type_change_description_field.inc'
+
+    );
+
+    return $items;
+}

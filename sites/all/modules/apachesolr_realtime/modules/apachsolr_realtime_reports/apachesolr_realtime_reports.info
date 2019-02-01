@@ -5,9 +5,9 @@ core = 7.x
 
 dependencies[] = apachesolr
 dependencies[] = apachesolr_realtime
-; Information added by Drupal.org packaging script on 2015-05-16
-version = "7.x-1.2"
+; Information added by Drupal.org packaging script on 2017-04-28
+version = "7.x-1.4"
 core = "7.x"
 project = "apachesolr_realtime"
-datestamp = "1431798488"
+datestamp = "1493389693"
 
