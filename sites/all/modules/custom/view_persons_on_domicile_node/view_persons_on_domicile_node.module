@@ -1,0 +1,80 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: julien
+ * Date: 19.02.19
+ * Time: 08:23
+ */
+
+function view_persons_on_domicile_node_node_view_alter(&$build) {
+    global $base_url;
+    //dsm($build);
+
+    if ($node = menu_get_object()) {
+        $nid = $node->nid;
+    }   else {
+        $nid = -1;
+    }
+
+    if($build['#node']->type === 'domicile' && $build['#view_mode'] === 'full') {
+
+        $persons_entity_ids = get_persons_for_a_domicile_node($nid);
+
+
+        foreach ($persons_entity_ids as $persons_entity_id) {
+            $links[] = "<a href='" . $base_url . "/node/" . $persons_entity_id . "'>" . node_load($persons_entity_id)->title . "</a>";
+        }
+        //dsm($links);
+
+        $associated_persons = array(
+            '#theme' => 'item_list',
+            '#list_type' => 'ul',
+            '#title' => t('Associated Persons'),
+            '#items' => $links,
+
+        );
+
+        $build['#node']->content['persons_for_this_activity'] = array(
+            '#markup' => drupal_render($associated_persons),
+            '#weight' => 999,
+        );
+    }
+}
+
+function get_persons_for_a_domicile_node($nid) {
+    //get entity id of chronic where the nid of an activity is given (field_activityies_target_id)
+    //SQL: SELECT entity_id FROM women.field_data_field_activities
+    //WHERE field_activities_target_id = 1607;
+
+    $result = db_select('field_data_field_domiciles', 'd')
+        ->fields('d', array('entity_id'))
+        ->condition('field_domiciles_target_id', $nid, '=')
+        ->execute()
+        ->fetchAll();
+
+    //$chronic_entity_ids  = [];
+    foreach ($result as $row) {
+        //dsm($row->entity_id);
+        $chronic_entity_ids[] = $row->entity_id;
+    }
+    dsm($chronic_entity_ids);
+
+    foreach ($chronic_entity_ids as $chronic_entity_id) {
+        //SELECT * FROM women.field_data_field_chronics
+        //WHERE field_chronics_target_id = 1608;
+
+        $result = db_select('field_data_field_chronics', 'c')
+            ->fields('c', array('entity_id'))
+            ->condition('field_chronics_target_id', $chronic_entity_id, '=')
+            ->execute()
+            ->fetchAll();
+
+        foreach ($result as $row) {
+            //dsm($row->entity_id);
+            $person_entity_ids[] = $row->entity_id;
+        }
+        //dsm($person_entity_ids);
+    }
+
+    return $person_entity_ids;
+}

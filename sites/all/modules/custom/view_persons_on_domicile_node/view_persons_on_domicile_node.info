@@ -1,0 +1,4 @@
+name = View Persons On Domicile Node
+description = Views persons for Domicile
+core = 7.x
+package = Jigsaw
