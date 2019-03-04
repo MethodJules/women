@@ -20,7 +20,6 @@ function view_persons_on_domicile_node_node_view_alter(&$build) {
 
         $persons_entity_ids = get_persons_for_a_domicile_node($nid);
 
-
         foreach ($persons_entity_ids as $persons_entity_id) {
             $links[] = "<a href='" . $base_url . "/node/" . $persons_entity_id . "'>" . node_load($persons_entity_id)->title . "</a>";
         }
@@ -34,7 +33,7 @@ function view_persons_on_domicile_node_node_view_alter(&$build) {
 
         );
 
-        $build['#node']->content['persons_for_this_activity'] = array(
+        $build['#node']->content['persons_for_this_domicile'] = array(
             '#markup' => drupal_render($associated_persons),
             '#weight' => 999,
         );
@@ -73,7 +72,7 @@ function get_persons_for_a_domicile_node($nid) {
             //dsm($row->entity_id);
             $person_entity_ids[] = $row->entity_id;
         }
-        //dsm($person_entity_ids);
+        dsm($person_entity_ids);
     }
 
     return $person_entity_ids;
